@@ -14,4 +14,9 @@ export const {{ entity.className }}Factory = Factory
       @end
     }
   })
+  @each(rel in relationships)
+  @if(rel.type === 'hasMany' || rel.type === 'belongsToMany')
+  .relation('{{ rel.name }}', () => {{ rel.model }}Factory)
+  @end
+  @end
   .build()

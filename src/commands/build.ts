@@ -22,7 +22,29 @@ export class BuildBlueprint extends BaseCommand {
   @flags.boolean({ alias: 'e', description: 'Erase existing files' })
   declare erase: boolean
 
+  @flags.boolean({ alias: 'w', description: 'Watch the draft file for changes' })
+  declare watch: boolean
+
   async run() {
+    if (this.watch) {
+      this.logger.info(`Watching for changes in ${this.draftFile}...`)
+      const { watch } = await import('node:fs')
+
+      // Initial build
+      await this.build()
+
+      const watcher = watch(this.app.makePath(this.draftFile))
+      watcher.on('change', async () => {
+        this.logger.info('Changes detected, rebuilding...')
+        await this.build()
+      })
+      return
+    }
+
+    await this.build()
+  }
+
+  private async build() {
     this.logger.info('Building application from ' + this.draftFile)
 
     const parser = new BlueprintParser()

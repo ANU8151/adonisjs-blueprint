@@ -9,32 +9,50 @@ export default class TraceBlueprint extends BaseCommand {
   async run() {
     this.logger.info('Tracing database to generate draft.yaml...')
 
-    // --------------------------------------------------------------------------
-    // Real Implementation Notes for the Future:
-    // To implement a full trace, we would dynamically import `@adonisjs/lucid`:
-    //
-    // const { default: db } = await import('@adonisjs/lucid/services/db')
-    // const tables = await db.connection().inspect()
-    //
-    // For each table, we would map SQL types (varchar, int, etc.)
-    // back to Blueprint types (string, integer), detect foreign keys
-    // via naming conventions (e.g. user_id -> belongsTo(User)),
-    // and construct the `draft.yaml` object dynamically.
-    // --------------------------------------------------------------------------
+    try {
+      // Dynamic import with template literal to bypass TypeScript static analysis
+      const modulePath = '@adonisjs/lucid/services/db'
+      const db = (await import(modulePath)) as any
+      const connection = db.default.connection()
+      const tables = await connection.inspect()
 
-    // This is a placeholder for real DB inspection logic
-    const draft = {
-      models: {
-        User: {
-          attributes: {
-            username: 'string',
-            email: 'string',
-          },
-        },
-      },
+      const draft: any = {
+        models: {},
+      }
+
+      for (const table of tables) {
+        if (['adonis_schema', 'adonis_schema_versions', 'lucid_models'].includes(table.name)) {
+          continue
+        }
+
+        const modelName = table.name
+          .split('_')
+          .map((p: string) => p.charAt(0).toUpperCase() + p.slice(1))
+          .join('')
+          .replace(/s$/, '') // Simple singularization
+
+        draft.models[modelName] = {
+          attributes: {},
+        }
+
+        const columns = await connection.getColumns(table.name)
+        for (const column of columns) {
+          if (['id', 'created_at', 'updated_at'].includes(column.defaultValue)) continue
+
+          let type = 'string'
+          if (column.type === 'integer' || column.type === 'int') type = 'integer'
+          if (column.type === 'boolean' || column.type === 'tinyint') type = 'boolean'
+          if (column.type === 'timestamp' || column.type === 'datetime') type = 'timestamp'
+
+          draft.models[modelName].attributes[column.defaultValue] = type
+        }
+      }
+
+      writeFileSync(this.app.makePath('draft.yaml'), stringify(draft))
+      this.logger.success('draft.yaml generated successfully from database')
+    } catch (error) {
+      this.logger.error('Failed to trace database. Make sure Lucid is configured.')
+      this.logger.debug(error)
     }
-
-    writeFileSync(this.app.makePath('draft.yaml'), stringify(draft))
-    this.logger.success('draft.yaml generated successfully from database')
   }
 }

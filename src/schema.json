@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "settings": {
+      "type": "object",
+      "properties": {
+        "api": { "type": "boolean" },
+        "inertia": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "adapter": { "enum": ["react", "vue", "svelte"] }
+          }
+        }
+      }
+    },
+    "auth": { "type": ["boolean", "object"] },
+    "models": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": { "type": ["string", "object"] }
+      }
+    },
+    "controllers": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "resource": { "type": "boolean" },
+          "middleware": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": { "type": "object" }
+      }
+    }
+  }
+}

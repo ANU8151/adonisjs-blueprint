@@ -34,6 +34,7 @@ export interface ControllerAction {
 
 export interface ControllerDefinition {
   name: string
+  middleware?: string[]
   actions: Record<string, ControllerAction>
 }
 

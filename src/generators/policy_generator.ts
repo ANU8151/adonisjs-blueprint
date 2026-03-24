@@ -10,7 +10,7 @@ export class PolicyGenerator extends BaseGenerator {
 
     // Extract authorization actions from controller definition
     if (definition) {
-      for (const [actionName, actionDef] of Object.entries(definition)) {
+      for (const actionDef of Object.values(definition)) {
         if (typeof actionDef === 'object' && actionDef !== null && (actionDef as any).authorize) {
           const authStr = (actionDef as any).authorize as string
           const parts = authStr.split(',')

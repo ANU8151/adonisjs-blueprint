@@ -26,6 +26,14 @@ import {{ policy }} from '#policies/{{ entity.name.toLowerCase() }}_policy'
 @end
 
 export default class {{ entity.className }}Controller {
+  @if(middleware.length)
+  static middleware = [
+    @each(item in middleware)
+    middleware.{{ item }}(),
+    @end
+  ]
+  @end
+
   @each(action in actions)
   async {{ action.name }}({ {{ action.context }} }: HttpContext) {
     {{ action.logic }}

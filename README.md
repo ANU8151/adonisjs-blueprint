@@ -3,16 +3,17 @@
 > [!note]
 > This package targets **AdonisJS v7**
 
-A code generator for AdonisJS 7 inspired by [Laravel Blueprint](https://blueprint.laravelshift.com/). Rapidly scaffold your application from a single, human-readable YAML file.
+A professional-grade code generator for AdonisJS 7 inspired by [Laravel Blueprint](https://blueprint.laravelshift.com/). Rapidly scaffold your entire application infrastructure from a single, human-readable YAML file.
 
 ## Features
 
-- **Models & Migrations**: Generates Schema-class compatible Lucid models and migrations (including automatic pivot tables for many-to-many).
-- **Controllers & Routes**: Generates controllers with advanced logic and registers resource routes automatically.
-- **Validators & Factories**: Creates VineJS validators and Faker-powered factories based on model attributes.
-- **Views**: Supports both traditional **Edge** views and **InertiaJS** pages (React, Vue, Svelte).
-- **Infrastructure**: Generates Events, Mails, Jobs, and Japa functional tests.
-- **Reverse Engineering**: Generate a `draft.yaml` from your existing database using the `trace` command.
+- **API-First Mode**: Switch between traditional MVC, InertiaJS, or pure JSON APIs with a single setting.
+- **Models & Migrations**: Generates Schema-class compatible Lucid models with support for **Soft Deletes**, **Enums**, and automatic **Pivot Tables**.
+- **Controllers & Routes**: Generates controllers with advanced logic, automatic imports, and registers **Resource** or **API** routes (including nested resources).
+- **Authorization**: Integrated **Bouncer** support—automatically generates Policy classes and injects authorization checks.
+- **Validators & Factories**: Creates advanced **VineJS** validators (with unique, min/max rules) and Faker-powered factories.
+- **Infrastructure**: Generates Seeders, Events, Mails, Jobs, and **Japa** functional tests automatically.
+- **Stubs Customization**: Eject and customize all templates to match your team's coding style.
 
 ## Setup
 
@@ -22,7 +23,7 @@ Install the package via npm:
 npm install adonis-blueprint
 ```
 
-Configure the package:
+Configure the package to publish the default configuration:
 
 ```sh
 node ace configure adonis-blueprint
@@ -32,19 +33,21 @@ node ace configure adonis-blueprint
 
 ### 1. Create a `draft.yaml` file
 
-Define your models and controllers in a `draft.yaml` file in your project root.
+Define your application structure in a `draft.yaml` file in your project root.
 
 ```yaml
 settings:
+  api: true # Enable API mode (JSON responses, .apiOnly() routes)
   inertia:
-    enabled: true
-    adapter: react # options: react, vue, svelte
+    enabled: false
+    adapter: react # react, vue, svelte
 
 models:
   Post:
-    title: string
+    title: string:min:5
     content: text
-    author_id: foreign
+    status: enum:draft,published,archived
+    softDeletes: true
     relationships:
       comments: hasMany
       tags: belongsToMany
@@ -53,12 +56,11 @@ controllers:
   Post:
     resource: true
     store:
-      validate: title, content
+      authorize: create, post
+      validate: title, content, status
       save: post
       fire: NewPostEvent
-      send: WelcomeEmail
-      flash: post.title
-      redirect: posts.index
+      render: json with: post
 ```
 
 ### 2. Build your application
@@ -69,42 +71,54 @@ Run the build command to generate all files:
 node ace blueprint:build
 ```
 
-### 3. Other Commands
+### 3. Core Commands
 
+- **Build**: Generate all files from `draft.yaml`.
+  ```sh
+  node ace blueprint:build
+  ```
 - **Erase**: Undo the last build and remove generated files.
   ```sh
   node ace blueprint:erase
   ```
-- **Trace**: Generate a `draft.yaml` from your current database schema.
+- **Trace**: Generate a `draft.yaml` from your current database (Reverse Engineering).
   ```sh
   node ace blueprint:trace
+  ```
+- **Stubs**: Copy all stubs to your project root for customization.
+  ```sh
+  node ace blueprint:stubs
   ```
 
 ## Controller Statements
 
 Blueprint supports several "smart" statements in your controller actions:
 
-- `validate: title, content`: Generates VineJS validation logic.
+- `query: all | paginate:20 | find`: Generates Lucid query logic.
+- `validate: title, content`: Generates advanced VineJS validation logic.
+- `authorize: action, model`: Generates Bouncer Policy and authorization check.
 - `save: model`: Generates `Model.create()` logic.
 - `delete: true`: Generates `findOrFail` and `delete()` logic.
-- `fire: EventName`: Generates an Event class and the `emitter.emit()` call.
-- `send: MailName`: Generates a Mail class and the `mail.sendLater()` call.
-- `dispatch: JobName`: Generates a Job class and the execution call.
-- `auth: true`: Injects `auth.user` into the action logic.
-- `render: folder/file`: Generates the view file (Edge or Inertia) and the `render()` call.
+- `fire: EventName`: Generates an Event class and `emitter.emit()` call.
+- `send: MailName`: Generates a Mail class and `mail.sendLater()` call.
+- `dispatch: JobName`: Generates a Job class and handles execution.
+- `render: view with: data`: Generates the view (Edge/Inertia/JSON) and passes data.
 
 ## Folder Structure
 
-The generator follows the standard AdonisJS 7 folder structure:
+Generated files follow the standard AdonisJS 7 conventions:
 
-- `app/models/*.ts`: Lucid Models
-- `database/migrations/*.ts`: Database Migrations
+- `app/models/*.ts`: Lucid Models (with Mixins)
+- `database/migrations/*.ts`: Database Migrations (inc. Pivots)
 - `app/controllers/*.ts`: HTTP Controllers
 - `app/validators/*.ts`: VineJS Validators
+- `app/enums/*.ts`: TypeScript Enums
+- `app/policies/*.ts`: Bouncer Policies
 - `database/factories/*.ts`: Lucid Factories
+- `database/seeders/*.ts`: Database Seeders
 - `app/events/*.ts`, `app/mails/*.ts`, `app/jobs/*.ts`: Classes
 - `resources/views/*.edge` or `inertia/pages/*.tsx|vue|svelte`: Views
-- `tests/functional/*.spec.ts`: Functional Tests
+- `tests/functional/*.spec.ts`: Japa Tests
 
 ## License
 

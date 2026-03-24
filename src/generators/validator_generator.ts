@@ -38,9 +38,13 @@ export class ValidatorGenerator extends BaseGenerator {
             i++
           } else if (modifier === 'optional' || modifier === 'nullable') {
             vineChain += '.optional()'
+          } else if (modifier === 'confirmed') {
+            vineChain += '.confirmed()'
+          } else if (modifier === 'regex' && parts[i + 1]) {
+            vineChain += `.regex(new RegExp('${parts[i + 1]}'))`
+            i++
           }
         }
-
         attributes.push({ name: attrName, vineType: vineChain.replace('vine.', '') })
       }
     }

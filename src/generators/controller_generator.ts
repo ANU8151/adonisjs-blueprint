@@ -22,6 +22,8 @@ export class ControllerGenerator extends BaseGenerator {
       policies: new Set<string>(),
     }
 
+    const middleware = definition.middleware || []
+
     // Support resource: true shorthand
     let normalizedDefinition = definition
     if (definition.resource) {
@@ -137,7 +139,6 @@ export class ControllerGenerator extends BaseGenerator {
         if (typedDef.render) {
           const parts = typedDef.render.split(' with: ')
           const viewPath = parts[0]
-          const dataVar = parts[1] || 'data'
 
           if (isApi || viewPath === 'json') {
             // Basic JSON response assuming the variable from query or save is available
@@ -178,6 +179,7 @@ export class ControllerGenerator extends BaseGenerator {
     await this.codemods.makeUsingStub(stubsRoot, 'make/controller/main.stub', {
       entity,
       actions,
+      middleware,
       imports: {
         models: Array.from(imports.models),
         validators: Array.from(imports.validators),

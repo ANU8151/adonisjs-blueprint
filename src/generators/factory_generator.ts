@@ -5,6 +5,7 @@ export class FactoryGenerator extends BaseGenerator {
   async generate(name: string, definition: any) {
     const entity = this.app.generators.createEntity(name)
     const attributes: any[] = []
+    const relationships: any[] = []
 
     if (definition.attributes) {
       for (const [attrName, attrType] of Object.entries(definition.attributes)) {
@@ -27,9 +28,23 @@ export class FactoryGenerator extends BaseGenerator {
       }
     }
 
+    if (definition.relationships) {
+      for (const [relName, relType] of Object.entries(definition.relationships) as [
+        string,
+        string,
+      ][]) {
+        relationships.push({
+          name: relName,
+          type: relType,
+          model: relName.charAt(0).toUpperCase() + relName.slice(1).replace(/s$/, ''),
+        })
+      }
+    }
+
     await this.codemods.makeUsingStub(stubsRoot, 'make/factory/main.stub', {
       entity,
       attributes,
+      relationships,
     })
   }
 }
