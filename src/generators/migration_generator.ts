@@ -6,6 +6,7 @@ export class MigrationGenerator extends BaseGenerator {
   async generate(name: string, definition: any) {
     const entity = this.app.generators.createEntity(name) as Entity
     const attributes: any[] = []
+    const processedAttributes = new Set<string>()
 
     if (definition.attributes) {
       for (const [attrName, attrType] of Object.entries(definition.attributes)) {
@@ -18,6 +19,18 @@ export class MigrationGenerator extends BaseGenerator {
           }
         }
         attributes.push({ migrationLine })
+        processedAttributes.add(attrName)
+      }
+    }
+
+    // Smart inference: add foreign keys from relationships if not already present
+    if (definition.relationships) {
+      for (const [relName, relType] of Object.entries(definition.relationships)) {
+        if (relType === 'belongsTo' && !processedAttributes.has(`${relName}_id`)) {
+          attributes.push({
+            migrationLine: `table.integer('${relName}_id').unsigned().references('id').inTable('${relName}s').onDelete('CASCADE')`,
+          })
+        }
       }
     }
 

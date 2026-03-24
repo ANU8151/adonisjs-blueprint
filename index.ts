@@ -7,5 +7,22 @@
 |
 */
 
-export { configure } from './configure.ts'
-export { stubsRoot } from './stubs/main.ts'
+export { configure } from './configure.js'
+export { stubsRoot } from './stubs/main.js'
+
+export interface BlueprintConfig {
+  viewer?: 'edge' | 'inertia'
+  inertia?: {
+    adapter?: 'react' | 'vue' | 'svelte'
+  }
+  namespaces?: {
+    models?: string
+    controllers?: string
+    validators?: string
+    factories?: string
+  }
+}
+
+export function defineConfig(config: BlueprintConfig): BlueprintConfig {
+  return config
+}

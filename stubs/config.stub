@@ -1,0 +1,32 @@
+{{{
+  exports({
+    to: app.configPath('blueprint.ts')
+  })
+}}}
+import { defineConfig } from 'adonis-blueprint'
+
+export default defineConfig({
+  /**
+   * Default view framework to use
+   * Options: 'edge', 'inertia'
+   */
+  viewer: 'edge',
+
+  /**
+   * Default Inertia adapter
+   * Options: 'react', 'vue', 'svelte'
+   */
+  inertia: {
+    adapter: 'react'
+  },
+
+  /**
+   * Custom namespaces for generated files
+   */
+  namespaces: {
+    models: 'app/models',
+    controllers: 'app/controllers',
+    validators: 'app/validators',
+    factories: 'database/factories',
+  }
+})

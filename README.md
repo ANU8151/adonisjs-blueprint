@@ -31,6 +31,7 @@ node ace configure adonis-blueprint
 ## Usage
 
 ### 1. Create a `draft.yaml` file
+
 Define your models and controllers in a `draft.yaml` file in your project root.
 
 ```yaml
@@ -61,6 +62,7 @@ controllers:
 ```
 
 ### 2. Build your application
+
 Run the build command to generate all files:
 
 ```sh

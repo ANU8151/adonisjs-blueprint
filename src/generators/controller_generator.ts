@@ -34,6 +34,28 @@ export class ControllerGenerator extends BaseGenerator {
       if (typeof actionDef === 'object' && actionDef !== null) {
         const typedDef = actionDef as any
 
+        if (typedDef.query) {
+          const queryParts = typedDef.query.split(':')
+          const queryType = queryParts[0]
+          const variableName =
+            entity.name.toLowerCase() + (queryType === 'all' || queryType === 'paginate' ? 's' : '')
+
+          if (queryType === 'all') {
+            logicLines.push(`const ${variableName} = await ${entity.className}.all()`)
+          } else if (queryType === 'paginate') {
+            const limit = queryParts[1] || '20'
+            logicLines.push(
+              `const ${variableName} = await ${entity.className}.query().paginate(request.input('page', 1), ${limit})`
+            )
+          } else if (queryType === 'find') {
+            logicLines.push(
+              `const ${variableName} = await ${entity.className}.findOrFail(params.id)`
+            )
+            if (!context.includes('params')) context += ', params'
+          }
+          imports.models.add(entity.className)
+        }
+
         if (typedDef.validate) {
           const validatorName =
             actionName === 'store' || actionName === 'update'
@@ -82,11 +104,15 @@ export class ControllerGenerator extends BaseGenerator {
         }
 
         if (typedDef.render) {
+          const parts = typedDef.render.split(' with: ')
+          const viewPath = parts[0]
+          const data = parts[1] ? `, { ${parts[1]} }` : ''
+
           if (useInertia) {
-            logicLines.push(`return inertia.render('${typedDef.render}')`)
+            logicLines.push(`return inertia.render('${viewPath}'${data})`)
             if (!context.includes('inertia')) context += ', inertia'
           } else {
-            logicLines.push(`return view.render('${typedDef.render}')`)
+            logicLines.push(`return view.render('${viewPath}'${data})`)
             if (!context.includes('view')) context += ', view'
           }
         }
