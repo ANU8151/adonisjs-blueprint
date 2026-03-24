@@ -8,12 +8,13 @@ A professional-grade code generator for AdonisJS 7 inspired by [Laravel Blueprin
 ## Features
 
 - **API-First Mode**: Switch between traditional MVC, InertiaJS, or pure JSON APIs with a single setting.
+- **Watch Mode**: Automatically rebuilds your application infrastructure whenever you save your `draft.yaml`.
+- **JSON Schema Support**: Get full IDE auto-completion and validation for your `draft.yaml` file.
 - **Models & Migrations**: Generates Schema-class compatible Lucid models with support for **Soft Deletes**, **Enums**, and automatic **Pivot Tables**.
-- **Controllers & Routes**: Generates controllers with advanced logic, automatic imports, and registers **Resource** or **API** routes (including nested resources).
+- **Controllers & Routes**: Generates controllers with advanced logic, **Middleware** support, and registers **Resource** or **API** routes.
 - **Authorization**: Integrated **Bouncer** support—automatically generates Policy classes and injects authorization checks.
-- **Validators & Factories**: Creates advanced **VineJS** validators (with unique, min/max rules) and Faker-powered factories.
+- **Validators & Factories**: Creates advanced **VineJS** validators (with unique, min/max, regex rules) and Faker-powered factories.
 - **Infrastructure**: Generates Seeders, Events, Mails, Jobs, and **Japa** functional tests automatically.
-- **Stubs Customization**: Eject and customize all templates to match your team's coding style.
 
 ## Setup
 
@@ -29,18 +30,29 @@ Configure the package to publish the default configuration:
 node ace configure adonis-blueprint
 ```
 
+## Developer Experience (DX)
+
+To enable **Auto-completion** and **Validation** in VS Code, add the following comment to the top of your `draft.yaml`:
+
+```yaml
+# yaml-language-server: $schema=node_modules/adonis-blueprint/build/src/schema.json
+
+settings:
+  api: true
+...
+```
+
 ## Usage
 
 ### 1. Create a `draft.yaml` file
-
 Define your application structure in a `draft.yaml` file in your project root.
 
 ```yaml
 settings:
-  api: true # Enable API mode (JSON responses, .apiOnly() routes)
+  api: true
   inertia:
     enabled: false
-    adapter: react # react, vue, svelte
+    adapter: react
 
 models:
   Post:
@@ -54,6 +66,7 @@ models:
 
 controllers:
   Post:
+    middleware: [auth]
     resource: true
     store:
       authorize: create, post
@@ -64,24 +77,25 @@ controllers:
 ```
 
 ### 2. Build your application
-
 Run the build command to generate all files:
 
 ```sh
 node ace blueprint:build
 ```
 
+For a seamless experience, use the **Watch Mode**:
+```sh
+node ace blueprint:build --watch
+```
+
 ### 3. Core Commands
 
-- **Build**: Generate all files from `draft.yaml`.
-  ```sh
-  node ace blueprint:build
-  ```
+- **Build**: Generate all files from `draft.yaml`. Supports `--watch`.
 - **Erase**: Undo the last build and remove generated files.
   ```sh
   node ace blueprint:erase
   ```
-- **Trace**: Generate a `draft.yaml` from your current database (Reverse Engineering).
+- **Trace**: Generate a `draft.yaml` from your current database (Full Reverse Engineering).
   ```sh
   node ace blueprint:trace
   ```
@@ -103,22 +117,6 @@ Blueprint supports several "smart" statements in your controller actions:
 - `send: MailName`: Generates a Mail class and `mail.sendLater()` call.
 - `dispatch: JobName`: Generates a Job class and handles execution.
 - `render: view with: data`: Generates the view (Edge/Inertia/JSON) and passes data.
-
-## Folder Structure
-
-Generated files follow the standard AdonisJS 7 conventions:
-
-- `app/models/*.ts`: Lucid Models (with Mixins)
-- `database/migrations/*.ts`: Database Migrations (inc. Pivots)
-- `app/controllers/*.ts`: HTTP Controllers
-- `app/validators/*.ts`: VineJS Validators
-- `app/enums/*.ts`: TypeScript Enums
-- `app/policies/*.ts`: Bouncer Policies
-- `database/factories/*.ts`: Lucid Factories
-- `database/seeders/*.ts`: Database Seeders
-- `app/events/*.ts`, `app/mails/*.ts`, `app/jobs/*.ts`: Classes
-- `resources/views/*.edge` or `inertia/pages/*.tsx|vue|svelte`: Views
-- `tests/functional/*.spec.ts`: Japa Tests
 
 ## License
 
