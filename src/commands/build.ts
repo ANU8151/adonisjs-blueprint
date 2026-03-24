@@ -7,6 +7,7 @@ import { ValidatorGenerator } from '../generators/validator_generator.js'
 import { FactoryGenerator } from '../generators/factory_generator.js'
 import { RouteGenerator } from '../generators/route_generator.js'
 import { TestGenerator } from '../generators/test_generator.js'
+import { ViewGenerator } from '../generators/view_generator.js'
 
 export class BuildBlueprint extends BaseCommand {
   static commandName = 'blueprint:build'
@@ -43,12 +44,24 @@ export class BuildBlueprint extends BaseCommand {
       const controllerGenerator = new ControllerGenerator(this.app, this.logger)
       const routeGenerator = new RouteGenerator(this.app, this.logger)
       const testGenerator = new TestGenerator(this.app, this.logger)
+      const viewGenerator = new ViewGenerator(this.app, this.logger)
+
+      const useInertia = blueprint.settings?.inertia || false
 
       for (const [name, definition] of Object.entries(blueprint.controllers)) {
         this.logger.info(`Generating controller, routes and tests for ${name}`)
-        await controllerGenerator.generate(name, definition)
+        await controllerGenerator.generate(name, definition, useInertia)
         await routeGenerator.generate(name, definition)
         await testGenerator.generate(name, definition)
+
+        // Generate views
+        for (const actionDef of Object.values(definition)) {
+          if (typeof actionDef === 'object' && actionDef !== null && (actionDef as any).render) {
+            const viewPath = (actionDef as any).render
+            this.logger.info(`Generating view ${viewPath}`)
+            await viewGenerator.generate(viewPath, useInertia)
+          }
+        }
       }
     }
 

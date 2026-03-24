@@ -38,6 +38,9 @@ export interface ControllerDefinition {
 }
 
 export interface BlueprintSchema {
+  settings?: {
+    inertia?: boolean
+  }
   models?: Record<string, any>
   controllers?: Record<string, any>
 }

@@ -116,6 +116,7 @@ test.group('Generators', () => {
                         return line
                       })
                       .join('\n')
+                    // Handle indentation if needed, but for mock join is enough
                     finalContent = finalContent.replace(
                       /@each\(action in actions\)[\s\S]*?@end/,
                       replacement
@@ -247,6 +248,22 @@ test.group('Generators', () => {
 
     // Also check if NewPost event was generated
     await assert.fileExists('app/events/newpost.ts')
+  })
+
+  test('generate controller with inertia rendering', async ({ assert, fs }) => {
+    const generator = setupGenerator(ControllerGenerator, fs, 'controller')
+    await generator.generate(
+      'Post',
+      {
+        index: { render: 'posts/index' },
+      },
+      true
+    ) // Pass useInertia = true
+
+    await assert.fileExists('app/controllers/post_controller.ts')
+    const content = await fs.contents('app/controllers/post_controller.ts')
+    assert.include(content, 'async index({ inertia }: HttpContext)')
+    assert.include(content, "return inertia.render('posts/index')")
   })
 
   test('generate routes', async ({ assert, fs }) => {

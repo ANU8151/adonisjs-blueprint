@@ -4,7 +4,7 @@ import type { Entity } from '../types.js'
 import { ClassGenerator } from './class_generator.js'
 
 export class ControllerGenerator extends BaseGenerator {
-  async generate(name: string, definition: any) {
+  async generate(name: string, definition: any, useInertia: boolean = false) {
     const entity = this.app.generators.createEntity(name) as Entity
     const classGenerator = new ClassGenerator(this.app, this.logger)
     const actions: any[] = []
@@ -82,8 +82,13 @@ export class ControllerGenerator extends BaseGenerator {
         }
 
         if (typedDef.render) {
-          logicLines.push(`return view.render('${typedDef.render}')`)
-          if (!context.includes('view')) context += ', view'
+          if (useInertia) {
+            logicLines.push(`return inertia.render('${typedDef.render}')`)
+            if (!context.includes('inertia')) context += ', inertia'
+          } else {
+            logicLines.push(`return view.render('${typedDef.render}')`)
+            if (!context.includes('view')) context += ', view'
+          }
         }
 
         if (typedDef.redirect) {
