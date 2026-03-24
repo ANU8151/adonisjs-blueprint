@@ -14,6 +14,13 @@ export class MigrationGenerator extends BaseGenerator {
         if (typeof attrType === 'string') {
           if (attrType === 'foreign') {
             migrationLine = `table.integer('${attrName}').unsigned().references('id').inTable('${attrName.replace('_id', 's')}')`
+          } else if (attrType.startsWith('enum:')) {
+            const values = attrType
+              .split(':')[1]
+              .split(',')
+              .map((v) => `'${v.trim()}'`)
+              .join(', ')
+            migrationLine = `table.enum('${attrName}', [${values}])`
           } else {
             migrationLine = `table.${attrType}('${attrName}')`
           }
@@ -32,6 +39,11 @@ export class MigrationGenerator extends BaseGenerator {
           })
         }
       }
+    }
+
+    // Add soft deletes column
+    if (definition.softDeletes) {
+      attributes.push({ migrationLine: `table.timestamp('deleted_at')` })
     }
 
     await this.codemods.makeUsingStub(stubsRoot, 'make/migration/main.stub', {

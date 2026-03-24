@@ -10,6 +10,7 @@ import { TestGenerator } from '../generators/test_generator.js'
 import { ViewGenerator } from '../generators/view_generator.js'
 import { SeederGenerator } from '../generators/seeder_generator.js'
 import { PolicyGenerator } from '../generators/policy_generator.js'
+import { EnumGenerator } from '../generators/enum_generator.js'
 
 export class BuildBlueprint extends BaseCommand {
   static commandName = 'blueprint:build'
@@ -50,6 +51,7 @@ export class BuildBlueprint extends BaseCommand {
       const validatorGenerator = new ValidatorGenerator(this.app, this.logger)
       const factoryGenerator = new FactoryGenerator(this.app, this.logger)
       const seederGenerator = new SeederGenerator(this.app, this.logger)
+      const enumGenerator = new EnumGenerator(this.app, this.logger)
 
       for (const [name, definition] of Object.entries(blueprint.models)) {
         this.logger.info(`Generating model, migration, validator, factory and seeder for ${name}`)
@@ -58,6 +60,21 @@ export class BuildBlueprint extends BaseCommand {
         await validatorGenerator.generate(name, definition)
         await factoryGenerator.generate(name, definition)
         await seederGenerator.generate(name, definition)
+
+        // Generate Enums if present
+        if ((definition as any).attributes) {
+          for (const [attrName, attrType] of Object.entries((definition as any).attributes)) {
+            if (typeof attrType === 'string' && attrType.startsWith('enum:')) {
+              const enumName = `${name.charAt(0).toUpperCase() + name.slice(1)}${attrName.charAt(0).toUpperCase() + attrName.slice(1)}`
+              const values = attrType
+                .split(':')[1]
+                .split(',')
+                .map((v) => v.trim())
+              this.logger.info(`Generating enum ${enumName}`)
+              await enumGenerator.generate(enumName, { values })
+            }
+          }
+        }
       }
     }
 
@@ -70,20 +87,23 @@ export class BuildBlueprint extends BaseCommand {
 
       const useInertia = blueprint.settings?.inertia?.enabled || false
       const adapter = blueprint.settings?.inertia?.adapter || 'react'
+      const isApi = blueprint.settings?.api || false
 
       for (const [name, definition] of Object.entries(blueprint.controllers)) {
         this.logger.info(`Generating controller, routes, tests and policies for ${name}`)
-        await controllerGenerator.generate(name, definition, useInertia)
-        await routeGenerator.generate(name, definition)
+        await controllerGenerator.generate(name, definition, useInertia, isApi)
+        await routeGenerator.generate(name, definition, isApi)
         await testGenerator.generate(name, definition)
         await policyGenerator.generate(name, definition)
 
-        // Generate views
-        for (const actionDef of Object.values(definition)) {
-          if (typeof actionDef === 'object' && actionDef !== null && (actionDef as any).render) {
-            const viewPath = (actionDef as any).render
-            this.logger.info(`Generating view ${viewPath} (${useInertia ? adapter : 'edge'})`)
-            await viewGenerator.generate(viewPath, useInertia, adapter)
+        // Generate views only if not API mode
+        if (!isApi) {
+          for (const actionDef of Object.values(definition)) {
+            if (typeof actionDef === 'object' && actionDef !== null && (actionDef as any).render) {
+              const viewPath = (actionDef as any).render
+              this.logger.info(`Generating view ${viewPath} (${useInertia ? adapter : 'edge'})`)
+              await viewGenerator.generate(viewPath, useInertia, adapter)
+            }
           }
         }
       }

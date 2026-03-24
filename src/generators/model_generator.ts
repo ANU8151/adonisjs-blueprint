@@ -6,6 +6,26 @@ export class ModelGenerator extends BaseGenerator {
     const entity = this.app.generators.createEntity(name)
     const relationships: any[] = []
 
+    // Core model imports
+    let modelImports = `import { DateTime } from 'luxon'\nimport { ${entity.className}Schema } from '../../database/schema.js'`
+    let modelSignature = `export default class ${entity.className} extends ${entity.className}Schema {`
+
+    // Handle soft deletes
+    if (definition.softDeletes) {
+      modelImports = `import { DateTime } from 'luxon'\nimport { ${entity.className}Schema } from '../../database/schema.js'\nimport { compose } from '@adonisjs/core/helpers'\nimport { withSoftDeletes } from '@adonisjs/lucid-soft-deletes'`
+      modelSignature = `export default class ${entity.className} extends compose(${entity.className}Schema, withSoftDeletes) {`
+    }
+
+    // Handle enums
+    if (definition.attributes) {
+      for (const [attrName, attrType] of Object.entries(definition.attributes)) {
+        if (typeof attrType === 'string' && attrType.startsWith('enum:')) {
+          const enumName = `${entity.className}${attrName.charAt(0).toUpperCase() + attrName.slice(1)}`
+          modelImports += `\nimport { ${enumName} } from '#enums/${enumName.toLowerCase()}'`
+        }
+      }
+    }
+
     if (definition.relationships) {
       for (const [relName, relType] of Object.entries(definition.relationships) as [
         string,
@@ -23,6 +43,8 @@ export class ModelGenerator extends BaseGenerator {
     await this.codemods.makeUsingStub(stubsRoot, 'make/model/main.stub', {
       entity,
       relationships,
+      modelImports,
+      modelSignature,
     })
   }
 }

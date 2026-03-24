@@ -1,0 +1,10 @@
+{{{
+  exports({
+    to: app.makePath('app/enums', entity.path, entity.name.toLowerCase() + '.ts')
+  })
+}}}
+export enum {{ entity.className }} {
+  @each(val in values)
+  {{ val.key }} = '{{ val.value }}',
+  @end
+}

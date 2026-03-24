@@ -49,6 +49,16 @@ test.group('Generators', () => {
                   state.entity.tableName
                 )
 
+                if (state.modelImports) {
+                  finalContent = finalContent.replace('{{{ modelImports }}}', state.modelImports)
+                }
+                if (state.modelSignature) {
+                  finalContent = finalContent.replace(
+                    '{{{ modelSignature }}}',
+                    state.modelSignature
+                  )
+                }
+
                 // Mock @if blocks
                 finalContent = finalContent.replace(
                   /@if\(imports\.(models|validators|events|policies)\)[\s\S]*?@end\n/g,

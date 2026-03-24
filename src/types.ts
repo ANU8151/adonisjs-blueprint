@@ -39,6 +39,7 @@ export interface ControllerDefinition {
 
 export interface BlueprintSchema {
   settings?: {
+    api?: boolean
     inertia?: {
       enabled: boolean
       adapter: 'react' | 'vue' | 'svelte'

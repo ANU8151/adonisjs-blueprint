@@ -1,16 +1,16 @@
 {{{
   exports({
-    to: app.makePath('app/models', entity.path, entity.name + '.ts')
+    to: app.makePath('app/models', entity.path, entity.name.toLowerCase() + '.ts')
   })
 }}}
-import { DateTime } from 'luxon'
-import { {{ entity.className }}Schema } from '../../database/schema.js'
+{{{ modelImports }}}
 @each(relationship in relationships)
 {{ relationship.importLine }}
 @end
 
-export default class {{ entity.className }} extends {{ entity.className }}Schema {
+{{{ modelSignature }}}
   @each(relationship in relationships)
   {{ relationship.line }}
   @end
 }
+

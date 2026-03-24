@@ -4,8 +4,15 @@ import type { Entity } from '../types.js'
 import { ClassGenerator } from './class_generator.js'
 
 export class ControllerGenerator extends BaseGenerator {
-  async generate(name: string, definition: any, useInertia: boolean = false) {
-    const entity = this.app.generators.createEntity(name) as Entity
+  async generate(
+    name: string,
+    definition: any,
+    useInertia: boolean = false,
+    isApi: boolean = false
+  ) {
+    const nameParts = name.split('.')
+    const baseName = nameParts.pop()! // Handle nested names like Post.Comment
+    const entity = this.app.generators.createEntity(baseName) as Entity
     const classGenerator = new ClassGenerator(this.app, this.logger)
     const actions: any[] = []
     const imports = {
@@ -16,17 +23,30 @@ export class ControllerGenerator extends BaseGenerator {
     }
 
     // Support resource: true shorthand
-    const normalizedDefinition = definition.resource
-      ? {
-          index: { render: `${entity.name.toLowerCase()}s/index` },
-          create: { render: `${entity.name.toLowerCase()}s/create` },
-          store: { validate: 'all', save: true, redirect: `${entity.name.toLowerCase()}s.index` },
-          show: { render: `${entity.name.toLowerCase()}s/show` },
-          edit: { render: `${entity.name.toLowerCase()}s/edit` },
-          update: { validate: 'all', save: true, redirect: `${entity.name.toLowerCase()}s.index` },
-          destroy: { delete: true, redirect: `${entity.name.toLowerCase()}s.index` },
-        }
-      : definition
+    let normalizedDefinition = definition
+    if (definition.resource) {
+      normalizedDefinition = isApi
+        ? {
+            index: { query: 'all', render: 'json' },
+            store: { validate: 'all', save: true, render: 'json' },
+            show: { query: 'find', render: 'json' },
+            update: { validate: 'all', save: true, render: 'json' },
+            destroy: { delete: true, render: 'json' },
+          }
+        : {
+            index: { render: `${entity.name.toLowerCase()}s/index` },
+            create: { render: `${entity.name.toLowerCase()}s/create` },
+            store: { validate: 'all', save: true, redirect: `${entity.name.toLowerCase()}s.index` },
+            show: { render: `${entity.name.toLowerCase()}s/show` },
+            edit: { render: `${entity.name.toLowerCase()}s/edit` },
+            update: {
+              validate: 'all',
+              save: true,
+              redirect: `${entity.name.toLowerCase()}s.index`,
+            },
+            destroy: { delete: true, redirect: `${entity.name.toLowerCase()}s.index` },
+          }
+    }
 
     for (const [actionName, actionDef] of Object.entries(normalizedDefinition)) {
       let context = 'request, response'
@@ -117,12 +137,22 @@ export class ControllerGenerator extends BaseGenerator {
         if (typedDef.render) {
           const parts = typedDef.render.split(' with: ')
           const viewPath = parts[0]
-          const data = parts[1] ? `, { ${parts[1]} }` : ''
+          const dataVar = parts[1] || 'data'
 
-          if (useInertia) {
+          if (isApi || viewPath === 'json') {
+            // Basic JSON response assuming the variable from query or save is available
+            const responseData = parts[1]
+              ? parts[1]
+              : actionName === 'store' || actionName === 'update'
+                ? 'payload'
+                : 'data'
+            logicLines.push(`return response.json({ ${responseData} })`)
+          } else if (useInertia) {
+            const data = parts[1] ? `, { ${parts[1]} }` : ''
             logicLines.push(`return inertia.render('${viewPath}'${data})`)
             if (!context.includes('inertia')) context += ', inertia'
           } else {
+            const data = parts[1] ? `, { ${parts[1]} }` : ''
             logicLines.push(`return view.render('${viewPath}'${data})`)
             if (!context.includes('view')) context += ', view'
           }
