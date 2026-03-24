@@ -44,6 +44,7 @@ export interface BlueprintSchema {
       adapter: 'react' | 'vue' | 'svelte'
     }
   }
+  auth?: Record<string, any> | boolean
   models?: Record<string, any>
   controllers?: Record<string, any>
 }

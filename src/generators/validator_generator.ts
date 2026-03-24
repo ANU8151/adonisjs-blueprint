@@ -8,15 +8,40 @@ export class ValidatorGenerator extends BaseGenerator {
 
     if (definition.attributes) {
       for (const [attrName, attrType] of Object.entries(definition.attributes)) {
-        let vineType = 'string'
-        if (typeof attrType === 'string') {
-          if (attrType === 'number' || attrType === 'integer') {
-            vineType = 'number'
-          } else if (attrType === 'boolean') {
-            vineType = 'boolean'
+        let vineChain = 'vine.string()'
+
+        const typeStr = typeof attrType === 'string' ? attrType : (attrType as any).type || 'string'
+        const parts = typeStr.split(':')
+        const baseType = parts[0]
+
+        if (baseType === 'number' || baseType === 'integer') {
+          vineChain = 'vine.number()'
+        } else if (baseType === 'boolean') {
+          vineChain = 'vine.boolean()'
+        } else if (baseType === 'email') {
+          vineChain = 'vine.string().email()'
+        }
+
+        // Apply modifiers
+        for (let i = 1; i < parts.length; i++) {
+          const modifier = parts[i]
+          if (modifier === 'unique') {
+            // Basic unique representation
+            vineChain += `.unique(async (db, value) => { return !await db.from('${entity.name.toLowerCase()}s').where('${attrName}', value).first() })`
+          } else if (modifier === 'min' && parts[i + 1]) {
+            vineChain +=
+              baseType === 'number' ? `.min(${parts[i + 1]})` : `.minLength(${parts[i + 1]})`
+            i++
+          } else if (modifier === 'max' && parts[i + 1]) {
+            vineChain +=
+              baseType === 'number' ? `.max(${parts[i + 1]})` : `.maxLength(${parts[i + 1]})`
+            i++
+          } else if (modifier === 'optional' || modifier === 'nullable') {
+            vineChain += '.optional()'
           }
         }
-        attributes.push({ name: attrName, vineType })
+
+        attributes.push({ name: attrName, vineType: vineChain.replace('vine.', '') })
       }
     }
 

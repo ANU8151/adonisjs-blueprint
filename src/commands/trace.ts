@@ -9,6 +9,19 @@ export default class TraceBlueprint extends BaseCommand {
   async run() {
     this.logger.info('Tracing database to generate draft.yaml...')
 
+    // --------------------------------------------------------------------------
+    // Real Implementation Notes for the Future:
+    // To implement a full trace, we would dynamically import `@adonisjs/lucid`:
+    //
+    // const { default: db } = await import('@adonisjs/lucid/services/db')
+    // const tables = await db.connection().inspect()
+    //
+    // For each table, we would map SQL types (varchar, int, etc.)
+    // back to Blueprint types (string, integer), detect foreign keys
+    // via naming conventions (e.g. user_id -> belongsTo(User)),
+    // and construct the `draft.yaml` object dynamically.
+    // --------------------------------------------------------------------------
+
     // This is a placeholder for real DB inspection logic
     const draft = {
       models: {

@@ -19,6 +19,11 @@ import { {{ validator }} } from '#validators/{{ entity.name.toLowerCase() }}'
 import {{ event }} from '#events/{{ event.toLowerCase() }}'
 @end
 @end
+@if(imports.policies)
+@each(policy in imports.policies)
+import {{ policy }} from '#policies/{{ entity.name.toLowerCase() }}_policy'
+@end
+@end
 
 export default class {{ entity.className }}Controller {
   @each(action in actions)

@@ -1,0 +1,13 @@
+{{{
+  exports({
+    to: app.makePath('database/seeders', entity.path, entity.name.toLowerCase() + '_seeder.ts')
+  })
+}}}
+import { BaseSeeder } from '@adonisjs/lucid/seeders'
+import { {{ entity.className }}Factory } from '#database/factories/{{ entity.name.toLowerCase() }}_factory'
+
+export default class extends BaseSeeder {
+  async run() {
+    await {{ entity.className }}Factory.createMany(10)
+  }
+}

@@ -12,6 +12,7 @@ export class ControllerGenerator extends BaseGenerator {
       models: new Set<string>(),
       validators: new Set<string>(),
       events: new Set<string>(),
+      policies: new Set<string>(),
     }
 
     // Support resource: true shorthand
@@ -54,6 +55,16 @@ export class ControllerGenerator extends BaseGenerator {
             if (!context.includes('params')) context += ', params'
           }
           imports.models.add(entity.className)
+        }
+
+        if (typedDef.authorize) {
+          const authParts = (typedDef.authorize as string).split(',')
+          const action = authParts[0].trim()
+          const modelArg = authParts[1] ? `, ${authParts[1].trim()}` : ''
+          const policyName = `${entity.className}Policy`
+          logicLines.push(`await bouncer.with(${policyName}).authorize('${action}'${modelArg})`)
+          imports.policies.add(policyName)
+          if (!context.includes('bouncer')) context += ', bouncer'
         }
 
         if (typedDef.validate) {
@@ -141,6 +152,7 @@ export class ControllerGenerator extends BaseGenerator {
         models: Array.from(imports.models),
         validators: Array.from(imports.validators),
         events: Array.from(imports.events),
+        policies: Array.from(imports.policies),
       },
     })
   }

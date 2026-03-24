@@ -1,0 +1,17 @@
+{{{
+  exports({
+    to: app.makePath('app/policies', entity.path, entity.name.toLowerCase() + '_policy.ts')
+  })
+}}}
+import User from '#models/user'
+import {{ entity.className }} from '#models/{{ entity.name.toLowerCase() }}'
+import { BasePolicy } from '@adonisjs/bouncer'
+import { AuthorizerResponse } from '@adonisjs/bouncer/types'
+
+export default class {{ entity.className }}Policy extends BasePolicy {
+  @each(action in actions)
+  {{ action.name }}(user: User, model: {{ entity.className }}): AuthorizerResponse {
+    return true
+  }
+  @end
+}

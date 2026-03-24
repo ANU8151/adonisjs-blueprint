@@ -8,6 +8,8 @@ import { FactoryGenerator } from '../generators/factory_generator.js'
 import { RouteGenerator } from '../generators/route_generator.js'
 import { TestGenerator } from '../generators/test_generator.js'
 import { ViewGenerator } from '../generators/view_generator.js'
+import { SeederGenerator } from '../generators/seeder_generator.js'
+import { PolicyGenerator } from '../generators/policy_generator.js'
 
 export class BuildBlueprint extends BaseCommand {
   static commandName = 'blueprint:build'
@@ -25,18 +27,37 @@ export class BuildBlueprint extends BaseCommand {
     const parser = new BlueprintParser()
     const blueprint = await parser.parse(this.draftFile)
 
+    if (blueprint.auth) {
+      this.logger.info('Auth shorthand detected.')
+      this.logger.warning('AdonisJS 7 provides a native, highly secure auth scaffolding.')
+      this.logger.action('Please run: node ace add auth').succeeded()
+
+      // We can also auto-inject a simple AuthController into the blueprint definition here
+      if (!blueprint.controllers) blueprint.controllers = {}
+      if (!blueprint.controllers['Auth']) {
+        blueprint.controllers['Auth'] = {
+          login: { render: 'auth/login' },
+          register: { render: 'auth/register' },
+          store: { validate: 'email, password', auth: 'true', redirect: 'home' },
+          logout: { auth: 'logout', redirect: 'home' },
+        }
+      }
+    }
+
     if (blueprint.models) {
       const modelGenerator = new ModelGenerator(this.app, this.logger)
       const migrationGenerator = new MigrationGenerator(this.app, this.logger)
       const validatorGenerator = new ValidatorGenerator(this.app, this.logger)
       const factoryGenerator = new FactoryGenerator(this.app, this.logger)
+      const seederGenerator = new SeederGenerator(this.app, this.logger)
 
       for (const [name, definition] of Object.entries(blueprint.models)) {
-        this.logger.info(`Generating model, migration, validator and factory for ${name}`)
+        this.logger.info(`Generating model, migration, validator, factory and seeder for ${name}`)
         await modelGenerator.generate(name, definition)
         await migrationGenerator.generate(name, definition)
         await validatorGenerator.generate(name, definition)
         await factoryGenerator.generate(name, definition)
+        await seederGenerator.generate(name, definition)
       }
     }
 
@@ -45,15 +66,17 @@ export class BuildBlueprint extends BaseCommand {
       const routeGenerator = new RouteGenerator(this.app, this.logger)
       const testGenerator = new TestGenerator(this.app, this.logger)
       const viewGenerator = new ViewGenerator(this.app, this.logger)
+      const policyGenerator = new PolicyGenerator(this.app, this.logger)
 
       const useInertia = blueprint.settings?.inertia?.enabled || false
       const adapter = blueprint.settings?.inertia?.adapter || 'react'
 
       for (const [name, definition] of Object.entries(blueprint.controllers)) {
-        this.logger.info(`Generating controller, routes and tests for ${name}`)
+        this.logger.info(`Generating controller, routes, tests and policies for ${name}`)
         await controllerGenerator.generate(name, definition, useInertia)
         await routeGenerator.generate(name, definition)
         await testGenerator.generate(name, definition)
+        await policyGenerator.generate(name, definition)
 
         // Generate views
         for (const actionDef of Object.values(definition)) {
