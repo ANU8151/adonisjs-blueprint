@@ -4,8 +4,8 @@ import { MigrationGenerator } from '../src/generators/migration_generator.js'
 import { ControllerGenerator } from '../src/generators/controller_generator.js'
 import { FactoryGenerator } from '../src/generators/factory_generator.js'
 import { RouteGenerator } from '../src/generators/route_generator.js'
-import { TestGenerator } from '../src/generators/test_generator.js'
 import { ClassGenerator } from '../src/generators/class_generator.js'
+import { ViewGenerator } from '../src/generators/view_generator.js'
 import { join, dirname } from 'node:path'
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 
@@ -68,7 +68,7 @@ test.group('Generators', () => {
                 // Mock @each loops for imports
                 finalContent = finalContent.replace(
                   /@each\((model|validator|event) in imports\.(models|validators|events)\)([\s\S]*?)@end/g,
-                  (match, item, list, body) => {
+                  (_match, item, list, body) => {
                     if (state.imports && state.imports[list]) {
                       return state.imports[list]
                         .map((val: string) => body.replace(new RegExp(`{{ ${item} }}`, 'g'), val))
@@ -116,7 +116,6 @@ test.group('Generators', () => {
                         return line
                       })
                       .join('\n')
-                    // Handle indentation if needed, but for mock join is enough
                     finalContent = finalContent.replace(
                       /@each\(action in actions\)[\s\S]*?@end/,
                       replacement
@@ -150,6 +149,12 @@ test.group('Generators', () => {
                       folder = 'app/mails'
                     } else if (type === 'job') {
                       folder = 'app/jobs'
+                    } else if (type === 'view') {
+                      folder = 'resources/views'
+                      ext = '.edge'
+                    } else if (type === 'view-inertia') {
+                      folder = 'inertia/pages'
+                      ext = '.tsx'
                     }
                     destination = join(fs.basePath, folder, state.entity.name.toLowerCase() + ext)
 
@@ -287,5 +292,24 @@ test.group('Generators', () => {
     const jobGenerator = setupGenerator(ClassGenerator, fs, 'job')
     await jobGenerator.generate('SyncData', 'job')
     await assert.fileExists('app/jobs/syncdata.ts')
+  })
+
+  test('generate edge view', async ({ assert, fs }) => {
+    const generator = setupGenerator(ViewGenerator, fs, 'view')
+    await generator.generate('posts/index', false)
+
+    await assert.fileExists('resources/views/posts/index.edge')
+    const content = await fs.contents('resources/views/posts/index.edge')
+    assert.include(content, '<h1>Index View</h1>')
+  })
+
+  test('generate inertia view', async ({ assert, fs }) => {
+    const generator = setupGenerator(ViewGenerator, fs, 'view-inertia')
+    await generator.generate('posts/index', true)
+
+    await assert.fileExists('inertia/pages/posts/index.tsx')
+    const content = await fs.contents('inertia/pages/posts/index.tsx')
+    assert.include(content, "import { Head } from '@inertiajs/react'")
+    assert.include(content, 'export default function Index')
   })
 })

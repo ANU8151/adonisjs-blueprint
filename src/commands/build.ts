@@ -46,7 +46,8 @@ export class BuildBlueprint extends BaseCommand {
       const testGenerator = new TestGenerator(this.app, this.logger)
       const viewGenerator = new ViewGenerator(this.app, this.logger)
 
-      const useInertia = blueprint.settings?.inertia || false
+      const useInertia = blueprint.settings?.inertia?.enabled || false
+      const adapter = blueprint.settings?.inertia?.adapter || 'react'
 
       for (const [name, definition] of Object.entries(blueprint.controllers)) {
         this.logger.info(`Generating controller, routes and tests for ${name}`)
@@ -58,8 +59,8 @@ export class BuildBlueprint extends BaseCommand {
         for (const actionDef of Object.values(definition)) {
           if (typeof actionDef === 'object' && actionDef !== null && (actionDef as any).render) {
             const viewPath = (actionDef as any).render
-            this.logger.info(`Generating view ${viewPath}`)
-            await viewGenerator.generate(viewPath, useInertia)
+            this.logger.info(`Generating view ${viewPath} (${useInertia ? adapter : 'edge'})`)
+            await viewGenerator.generate(viewPath, useInertia, adapter)
           }
         }
       }

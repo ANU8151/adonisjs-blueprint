@@ -39,7 +39,10 @@ export interface ControllerDefinition {
 
 export interface BlueprintSchema {
   settings?: {
-    inertia?: boolean
+    inertia?: {
+      enabled: boolean
+      adapter: 'react' | 'vue' | 'svelte'
+    }
   }
   models?: Record<string, any>
   controllers?: Record<string, any>
