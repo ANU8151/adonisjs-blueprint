@@ -1,0 +1,22 @@
+{{{
+  exports({
+    to: app.makePath('app/validators', entity.path, entity.name + '.ts')
+  })
+}}}
+import vine from '@vinejs/vine'
+
+export const create{{ entity.className }}Validator = vine.compile(
+  vine.object({
+    @each(attribute in attributes)
+    {{ attribute.name }}: vine.{{ attribute.vineType }}(),
+    @end
+  })
+)
+
+export const update{{ entity.className }}Validator = vine.compile(
+  vine.object({
+    @each(attribute in attributes)
+    {{ attribute.name }}: vine.{{ attribute.vineType }}().optional(),
+    @end
+  })
+)

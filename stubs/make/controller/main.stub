@@ -1,0 +1,14 @@
+{{{
+  exports({
+    to: app.makePath('app/controllers', entity.path, entity.name + '_controller.ts')
+  })
+}}}
+import type { HttpContext } from '@adonisjs/core/http'
+
+export default class {{ entity.className }}Controller {
+  @each(action in actions)
+  async {{ action.name }}({ {{ action.context }} }: HttpContext) {
+    {{ action.logic }}
+  }
+  @end
+}
