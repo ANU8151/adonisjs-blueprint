@@ -6,6 +6,7 @@ import { ControllerGenerator } from '../generators/controller_generator.js'
 import { ValidatorGenerator } from '../generators/validator_generator.js'
 import { FactoryGenerator } from '../generators/factory_generator.js'
 import { RouteGenerator } from '../generators/route_generator.js'
+import { TestGenerator } from '../generators/test_generator.js'
 
 export class BuildBlueprint extends BaseCommand {
   static commandName = 'blueprint:build'
@@ -41,11 +42,13 @@ export class BuildBlueprint extends BaseCommand {
     if (blueprint.controllers) {
       const controllerGenerator = new ControllerGenerator(this.app, this.logger)
       const routeGenerator = new RouteGenerator(this.app, this.logger)
+      const testGenerator = new TestGenerator(this.app, this.logger)
 
       for (const [name, definition] of Object.entries(blueprint.controllers)) {
-        this.logger.info(`Generating controller and routes for ${name}`)
+        this.logger.info(`Generating controller, routes and tests for ${name}`)
         await controllerGenerator.generate(name, definition)
         await routeGenerator.generate(name, definition)
+        await testGenerator.generate(name, definition)
       }
     }
 

@@ -7,7 +7,20 @@ export class ControllerGenerator extends BaseGenerator {
     const entity = this.app.generators.createEntity(name) as Entity
     const actions: any[] = []
 
-    for (const [actionName, actionDef] of Object.entries(definition)) {
+    // Support resource: true shorthand
+    const normalizedDefinition = definition.resource
+      ? {
+          index: { render: `${entity.name.toLowerCase()}s/index` },
+          create: { render: `${entity.name.toLowerCase()}s/create` },
+          store: { validate: 'all', save: true, redirect: `${entity.name.toLowerCase()}s.index` },
+          show: { render: `${entity.name.toLowerCase()}s/show` },
+          edit: { render: `${entity.name.toLowerCase()}s/edit` },
+          update: { validate: 'all', save: true, redirect: `${entity.name.toLowerCase()}s.index` },
+          destroy: { delete: true, redirect: `${entity.name.toLowerCase()}s.index` },
+        }
+      : definition
+
+    for (const [actionName, actionDef] of Object.entries(normalizedDefinition)) {
       let context = 'request, response'
       let logicLines: string[] = []
 
@@ -16,9 +29,9 @@ export class ControllerGenerator extends BaseGenerator {
 
         if (typedDef.validate) {
           const validatorName =
-            actionName === 'store'
-              ? `create${entity.className}Validator`
-              : `update${entity.className}Validator`
+            actionName === 'store' || actionName === 'update'
+              ? `${actionName === 'store' ? 'create' : 'update'}${entity.className}Validator`
+              : 'validator'
           logicLines.push(`const payload = await request.validateUsing(${validatorName})`)
         }
 
@@ -26,9 +39,34 @@ export class ControllerGenerator extends BaseGenerator {
           logicLines.push(`await ${entity.className}.create(payload)`)
         }
 
+        if (typedDef.delete) {
+          logicLines.push(`const model = await ${entity.className}.findOrFail(params.id)`)
+          logicLines.push(`await model.delete()`)
+          if (!context.includes('params')) context += ', params'
+        }
+
+        if (typedDef.fire) {
+          logicLines.push(`emitter.emit('${typedDef.fire}', payload)`)
+          if (!context.includes('emitter')) context += ', emitter'
+        }
+
+        if (typedDef.dispatch) {
+          logicLines.push(`${typedDef.dispatch}.dispatch(payload)`)
+        }
+
+        if (typedDef.send) {
+          logicLines.push(`await mail.sendLater(new ${typedDef.send}(payload))`)
+          if (!context.includes('mail')) context += ', mail'
+        }
+
+        if (typedDef.auth) {
+          logicLines.push(`const user = auth.user!`)
+          if (!context.includes('auth')) context += ', auth'
+        }
+
         if (typedDef.render) {
           logicLines.push(`return view.render('${typedDef.render}')`)
-          context = 'view'
+          if (!context.includes('view')) context += ', view'
         }
 
         if (typedDef.redirect) {

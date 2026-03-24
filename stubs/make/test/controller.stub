@@ -1,0 +1,16 @@
+{{{
+  exports({
+    to: app.makePath('tests/functional', entity.path, entity.name.toLowerCase() + '.spec.ts')
+  })
+}}}
+import { test } from '@japa/runner'
+
+test.group('{{ entity.className }}Controller', () => {
+  @each(action in actions)
+  test('{{ action.name }} action', async ({ client }) => {
+    const response = await client.get('/{{ entity.name.toLowerCase() }}s/{{ action.name }}')
+
+    response.assertStatus(200)
+  })
+  @end
+})
