@@ -4,8 +4,10 @@ import { ModelGenerator } from '../generators/model_generator.js'
 import { MigrationGenerator } from '../generators/migration_generator.js'
 import { ControllerGenerator } from '../generators/controller_generator.js'
 import { ValidatorGenerator } from '../generators/validator_generator.js'
+import { FactoryGenerator } from '../generators/factory_generator.js'
+import { RouteGenerator } from '../generators/route_generator.js'
 
-export default class BuildBlueprint extends BaseCommand {
+export class BuildBlueprint extends BaseCommand {
   static commandName = 'blueprint:build'
   static description = 'Build the application from the draft.yaml file'
 
@@ -25,24 +27,30 @@ export default class BuildBlueprint extends BaseCommand {
       const modelGenerator = new ModelGenerator(this.app, this.logger)
       const migrationGenerator = new MigrationGenerator(this.app, this.logger)
       const validatorGenerator = new ValidatorGenerator(this.app, this.logger)
+      const factoryGenerator = new FactoryGenerator(this.app, this.logger)
 
       for (const [name, definition] of Object.entries(blueprint.models)) {
-        this.logger.info(`Generating model, migration and validator for ${name}`)
+        this.logger.info(`Generating model, migration, validator and factory for ${name}`)
         await modelGenerator.generate(name, definition)
         await migrationGenerator.generate(name, definition)
         await validatorGenerator.generate(name, definition)
+        await factoryGenerator.generate(name, definition)
       }
     }
 
     if (blueprint.controllers) {
       const controllerGenerator = new ControllerGenerator(this.app, this.logger)
+      const routeGenerator = new RouteGenerator(this.app, this.logger)
 
       for (const [name, definition] of Object.entries(blueprint.controllers)) {
-        this.logger.info(`Generating controller ${name}`)
+        this.logger.info(`Generating controller and routes for ${name}`)
         await controllerGenerator.generate(name, definition)
+        await routeGenerator.generate(name, definition)
       }
     }
 
     this.logger.success('Application built successfully')
   }
 }
+
+export default BuildBlueprint

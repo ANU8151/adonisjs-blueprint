@@ -1,1 +1,1 @@
-export const commands = [() => import('./build.js')]
+export const commands = [() => import('./build.js'), () => import('./erase.js')]

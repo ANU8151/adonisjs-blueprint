@@ -1,3 +1,10 @@
+export interface Entity {
+  name: string
+  path: string
+  className: string
+  tableName?: string
+}
+
 export interface ModelAttribute {
   name: string
   type: string

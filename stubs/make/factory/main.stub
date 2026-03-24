@@ -1,0 +1,17 @@
+{{{
+  exports({
+    to: app.makePath('database/factories', entity.path, entity.name.toLowerCase() + '_factory.ts')
+  })
+}}}
+import {{ entity.className }} from '#models/{{ entity.name.toLowerCase() }}'
+import Factory from '@adonisjs/lucid/factories'
+
+export const {{ entity.className }}Factory = Factory
+  .define({{ entity.className }}, ({ faker }) => {
+    return {
+      @each(attribute in attributes)
+      {{ attribute.name }}: faker.{{ attribute.fakerMethod }}(),
+      @end
+    }
+  })
+  .build()

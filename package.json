@@ -85,6 +85,7 @@
       "./configure.ts",
       "./src/commands/main.ts",
       "./src/commands/build.ts",
+      "./src/commands/erase.ts",
       "./src/generators/*.ts",
       "./src/parser.ts"
     ],
