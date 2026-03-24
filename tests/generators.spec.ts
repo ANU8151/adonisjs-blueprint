@@ -3,19 +3,29 @@ import { ModelGenerator } from '../src/generators/model_generator.js'
 import { MigrationGenerator } from '../src/generators/migration_generator.js'
 import { ControllerGenerator } from '../src/generators/controller_generator.js'
 import { ValidatorGenerator } from '../src/generators/validator_generator.js'
+import { FactoryGenerator } from '../src/generators/factory_generator.js'
+import { RouteGenerator } from '../src/generators/route_generator.js'
+import { TestGenerator } from '../src/generators/test_generator.js'
 import { join, dirname } from 'node:path'
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 
 test.group('Generators', () => {
   const mockApp = (fs: any, type: string) =>
     ({
-      makePath: (...args: string[]) => join(fs.basePath, ...args),
+      makePath: (...args: string[]) => {
+        const path = join(fs.basePath, ...args)
+        if (args[0] === 'start/routes.ts' && !existsSync(path)) {
+          mkdirSync(dirname(path), { recursive: true })
+          writeFileSync(path, "import router from '@adonisjs/core/services/router'\n")
+        }
+        return path
+      },
       generators: {
         createEntity: (name: string) => ({
           name,
           path: '',
           className: name.charAt(0).toUpperCase() + name.slice(1),
-          tableName: name.toLowerCase() + 's',
+          tableName: name.includes('_') ? name : name.toLowerCase() + 's',
         }),
       },
       stubs: {
@@ -39,6 +49,51 @@ test.group('Generators', () => {
                   state.entity.tableName
                 )
 
+                // Mock @each loops for attributes
+                if (state.attributes) {
+                  const eachAttrMatch = finalContent.match(
+                    /@each\(attribute in attributes\)([\s\S]*?)@end/
+                  )
+                  if (eachAttrMatch) {
+                    const loopBody = eachAttrMatch[1]
+                    const replacement = state.attributes
+                      .map((attr: any) => {
+                        let line = loopBody.replace(/{{ attribute.name }}/g, attr.name)
+                        line = line.replace(/{{ attribute.vineType }}/g, attr.vineType)
+                        line = line.replace(/{{ attribute.fakerMethod }}/g, attr.fakerMethod)
+                        line = line.replace(/{{ attribute.migrationLine }}/g, attr.migrationLine)
+                        return line
+                      })
+                      .join('\n')
+                    finalContent = finalContent.replace(
+                      /@each\(attribute in attributes\)[\s\S]*?@end/,
+                      replacement
+                    )
+                  }
+                }
+
+                // Mock @each loops for actions
+                if (state.actions) {
+                  const eachActionMatch = finalContent.match(
+                    /@each\(action in actions\)([\s\S]*?)@end/
+                  )
+                  if (eachActionMatch) {
+                    const loopBody = eachActionMatch[1]
+                    const replacement = state.actions
+                      .map((action: any) => {
+                        let line = loopBody.replace(/{{ action.name }}/g, action.name)
+                        line = line.replace(/{{ action.context }}/g, action.context)
+                        line = line.replace(/{{ action.logic }}/g, action.logic)
+                        return line
+                      })
+                      .join('\n')
+                    finalContent = finalContent.replace(
+                      /@each\(action in actions\)[\s\S]*?@end/,
+                      replacement
+                    )
+                  }
+                }
+
                 const exportsMatch = finalContent.match(/{{{([\s\S]*?)}}}/)
                 let destination = ''
                 if (exportsMatch) {
@@ -53,8 +108,18 @@ test.group('Generators', () => {
                       ext = '_controller.ts'
                     } else if (type === 'validator') {
                       folder = 'app/validators'
+                    } else if (type === 'factory') {
+                      folder = 'database/factories'
+                      ext = '_factory.ts'
+                    } else if (type === 'test') {
+                      folder = 'tests/functional'
+                      ext = '.spec.ts'
                     }
-                    destination = join(fs.basePath, folder, state.entity.name + ext)
+                    destination = join(fs.basePath, folder, state.entity.name.toLowerCase() + ext)
+
+                    if (type === 'migration') {
+                      destination = join(fs.basePath, folder, state.entity.tableName + '.ts')
+                    }
                   }
                   finalContent = finalContent.replace(/{{{[\s\S]*?}}}/, '')
                 }
@@ -76,6 +141,8 @@ test.group('Generators', () => {
     info: () => {},
     success: () => {},
     error: () => {},
+    warning: () => {},
+    action: () => ({ succeeded: () => {} }),
   } as any
 
   const setupGenerator = (GeneratorClass: any, fs: any, type: string) => {
@@ -98,35 +165,67 @@ test.group('Generators', () => {
     await generator.generate('User', {
       attributes: { email: 'string' },
     })
-    await assert.fileExists('app/models/User.ts')
-    assert.include(await fs.contents('app/models/User.ts'), 'class User extends UserSchema')
+    await assert.fileExists('app/models/user.ts')
+    assert.include(await fs.contents('app/models/user.ts'), 'class User extends UserSchema')
   })
 
-  test('generate migration', async ({ assert, fs }) => {
+  test('generate migration with pivot', async ({ assert, fs }) => {
     const generator = setupGenerator(MigrationGenerator, fs, 'migration')
-    await generator.generate('User', {
-      attributes: { email: 'string' },
+    await generator.generate('Post', {
+      attributes: { title: 'string' },
+      relationships: {
+        users: 'belongsToMany',
+      },
     })
-    // Since our mock destination is simplified for test User.ts
-    await assert.fileExists('database/migrations/User.ts')
-    assert.include(await fs.contents('database/migrations/User.ts'), "tableName = 'users'")
+    await assert.fileExists('database/migrations/posts.ts')
+    // Pivot table check
+    await assert.fileExists('database/migrations/post_user.ts')
+    const pivotContent = await fs.contents('database/migrations/post_user.ts')
+    assert.include(pivotContent, "table.integer('post_id')")
+    assert.include(pivotContent, "table.integer('user_id')")
   })
 
-  test('generate controller', async ({ assert, fs }) => {
+  test('generate factory', async ({ assert, fs }) => {
+    const generator = setupGenerator(FactoryGenerator, fs, 'factory')
+    await generator.generate('User', {
+      attributes: { email: 'email', age: 'integer' },
+    })
+    await assert.fileExists('database/factories/user_factory.ts')
+    const content = await fs.contents('database/factories/user_factory.ts')
+    assert.include(content, 'faker.internet.email()')
+    assert.include(content, 'faker.number.int()')
+  })
+
+  test('generate controller with resource shorthand', async ({ assert, fs }) => {
     const generator = setupGenerator(ControllerGenerator, fs, 'controller')
     await generator.generate('User', {
-      index: { render: 'users/index' },
+      resource: true,
     })
-    await assert.fileExists('app/controllers/User_controller.ts')
-    assert.include(await fs.contents('app/controllers/User_controller.ts'), 'class UserController')
+    await assert.fileExists('app/controllers/user_controller.ts')
+    const content = await fs.contents('app/controllers/user_controller.ts')
+    assert.include(content, 'async index')
+    assert.include(content, 'async store')
+    assert.include(content, 'async destroy')
   })
 
-  test('generate validator', async ({ assert, fs }) => {
-    const generator = setupGenerator(ValidatorGenerator, fs, 'validator')
+  test('generate routes', async ({ assert, fs }) => {
+    const app = mockApp(fs, 'route')
+    const generator = new RouteGenerator(app, mockLogger)
+    await generator.generate('User', {})
+
+    const routesContent = await fs.contents('start/routes.ts')
+    assert.include(routesContent, "router.resource('users', '#controllers/user_controller')")
+  })
+
+  test('generate functional tests', async ({ assert, fs }) => {
+    const generator = setupGenerator(TestGenerator, fs, 'test')
     await generator.generate('User', {
-      attributes: { email: 'string' },
+      index: {},
+      store: {},
     })
-    await assert.fileExists('app/validators/User.ts')
-    assert.include(await fs.contents('app/validators/User.ts'), 'export const createUserValidator')
+    await assert.fileExists('tests/functional/user.spec.ts')
+    const content = await fs.contents('tests/functional/user.spec.ts')
+    assert.include(content, "test.group('UserController'")
+    assert.include(content, "test('index action'")
   })
 })
