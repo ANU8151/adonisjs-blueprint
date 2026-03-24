@@ -1,0 +1,12 @@
+{{{
+  exports({
+    to: app.makePath('app/jobs', entity.path, entity.name.toLowerCase() + '.ts')
+  })
+}}}
+export default class {{ entity.className }} {
+  constructor(public payload: any) {}
+
+  async handle() {
+    // Job logic
+  }
+}

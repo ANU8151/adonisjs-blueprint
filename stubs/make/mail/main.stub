@@ -1,0 +1,23 @@
+{{{
+  exports({
+    to: app.makePath('app/mails', entity.path, entity.name.toLowerCase() + '.ts')
+  })
+}}}
+import { BaseMail } from '@adonisjs/mail'
+
+export default class {{ entity.className }} extends BaseMail {
+  from = 'admin@example.com'
+  subject = 'Subject'
+
+  constructor(public payload: any) {
+    super()
+  }
+
+  /**
+   * The "build" method is used to configure the mail
+   * message.
+   */
+  async build() {
+    this.message.to('user@example.com')
+  }
+}

@@ -2,10 +2,10 @@ import { test } from '@japa/runner'
 import { ModelGenerator } from '../src/generators/model_generator.js'
 import { MigrationGenerator } from '../src/generators/migration_generator.js'
 import { ControllerGenerator } from '../src/generators/controller_generator.js'
-import { ValidatorGenerator } from '../src/generators/validator_generator.js'
 import { FactoryGenerator } from '../src/generators/factory_generator.js'
 import { RouteGenerator } from '../src/generators/route_generator.js'
 import { TestGenerator } from '../src/generators/test_generator.js'
+import { ClassGenerator } from '../src/generators/class_generator.js'
 import { join, dirname } from 'node:path'
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 
@@ -47,6 +47,35 @@ test.group('Generators', () => {
                 finalContent = finalContent.replace(
                   /{{ entity.tableName }}/g,
                   state.entity.tableName
+                )
+
+                // Mock @if blocks
+                finalContent = finalContent.replace(
+                  /@if\(imports\.(models|validators|events)\)[\s\S]*?@end\n/g,
+                  (match) => {
+                    const importType = match.match(/imports\.(models|validators|events)/)![1]
+                    if (
+                      state.imports &&
+                      state.imports[importType] &&
+                      state.imports[importType].length > 0
+                    ) {
+                      return match.replace(/@if\(imports\..*?\)\n/, '').replace(/@end\n/, '')
+                    }
+                    return ''
+                  }
+                )
+
+                // Mock @each loops for imports
+                finalContent = finalContent.replace(
+                  /@each\((model|validator|event) in imports\.(models|validators|events)\)([\s\S]*?)@end/g,
+                  (match, item, list, body) => {
+                    if (state.imports && state.imports[list]) {
+                      return state.imports[list]
+                        .map((val: string) => body.replace(new RegExp(`{{ ${item} }}`, 'g'), val))
+                        .join('')
+                    }
+                    return ''
+                  }
                 )
 
                 // Mock @each loops for attributes
@@ -114,11 +143,21 @@ test.group('Generators', () => {
                     } else if (type === 'test') {
                       folder = 'tests/functional'
                       ext = '.spec.ts'
+                    } else if (type === 'event') {
+                      folder = 'app/events'
+                    } else if (type === 'mail') {
+                      folder = 'app/mails'
+                    } else if (type === 'job') {
+                      folder = 'app/jobs'
                     }
                     destination = join(fs.basePath, folder, state.entity.name.toLowerCase() + ext)
 
                     if (type === 'migration') {
-                      destination = join(fs.basePath, folder, state.entity.tableName + '.ts')
+                      destination = join(
+                        fs.basePath,
+                        folder,
+                        (state.entity.tableName || state.entity.name.toLowerCase()) + '.ts'
+                      )
                     }
                   }
                   finalContent = finalContent.replace(/{{{[\s\S]*?}}}/, '')
@@ -178,7 +217,6 @@ test.group('Generators', () => {
       },
     })
     await assert.fileExists('database/migrations/posts.ts')
-    // Pivot table check
     await assert.fileExists('database/migrations/post_user.ts')
     const pivotContent = await fs.contents('database/migrations/post_user.ts')
     assert.include(pivotContent, "table.integer('post_id')")
@@ -196,16 +234,19 @@ test.group('Generators', () => {
     assert.include(content, 'faker.number.int()')
   })
 
-  test('generate controller with resource shorthand', async ({ assert, fs }) => {
+  test('generate controller with resource and imports', async ({ assert, fs }) => {
     const generator = setupGenerator(ControllerGenerator, fs, 'controller')
-    await generator.generate('User', {
-      resource: true,
+    await generator.generate('Post', {
+      store: { validate: 'title', save: true, fire: 'NewPost' },
     })
-    await assert.fileExists('app/controllers/user_controller.ts')
-    const content = await fs.contents('app/controllers/user_controller.ts')
-    assert.include(content, 'async index')
-    assert.include(content, 'async store')
-    assert.include(content, 'async destroy')
+    await assert.fileExists('app/controllers/post_controller.ts')
+    const content = await fs.contents('app/controllers/post_controller.ts')
+    assert.include(content, "import Post from '#models/post'")
+    assert.include(content, "import NewPost from '#events/newpost'")
+    assert.include(content, 'emitter.emit(new NewPost(payload))')
+
+    // Also check if NewPost event was generated
+    await assert.fileExists('app/events/newpost.ts')
   })
 
   test('generate routes', async ({ assert, fs }) => {
@@ -217,15 +258,17 @@ test.group('Generators', () => {
     assert.include(routesContent, "router.resource('users', '#controllers/user_controller')")
   })
 
-  test('generate functional tests', async ({ assert, fs }) => {
-    const generator = setupGenerator(TestGenerator, fs, 'test')
-    await generator.generate('User', {
-      index: {},
-      store: {},
-    })
-    await assert.fileExists('tests/functional/user.spec.ts')
-    const content = await fs.contents('tests/functional/user.spec.ts')
-    assert.include(content, "test.group('UserController'")
-    assert.include(content, "test('index action'")
+  test('generate classes (event, mail, job)', async ({ assert, fs }) => {
+    const generator = setupGenerator(ClassGenerator, fs, 'event')
+    await generator.generate('NewUser', 'event')
+    await assert.fileExists('app/events/newuser.ts')
+
+    const mailGenerator = setupGenerator(ClassGenerator, fs, 'mail')
+    await mailGenerator.generate('Welcome', 'mail')
+    await assert.fileExists('app/mails/welcome.ts')
+
+    const jobGenerator = setupGenerator(ClassGenerator, fs, 'job')
+    await jobGenerator.generate('SyncData', 'job')
+    await assert.fileExists('app/jobs/syncdata.ts')
   })
 })

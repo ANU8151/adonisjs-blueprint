@@ -1,9 +1,24 @@
 {{{
   exports({
-    to: app.makePath('app/controllers', entity.path, entity.name + '_controller.ts')
+    to: app.makePath('app/controllers', entity.path, entity.name.toLowerCase() + '_controller.ts')
   })
 }}}
 import type { HttpContext } from '@adonisjs/core/http'
+@if(imports.models)
+@each(model in imports.models)
+import {{ model }} from '#models/{{ model.toLowerCase() }}'
+@end
+@end
+@if(imports.validators)
+@each(validator in imports.validators)
+import { {{ validator }} } from '#validators/{{ entity.name.toLowerCase() }}'
+@end
+@end
+@if(imports.events)
+@each(event in imports.events)
+import {{ event }} from '#events/{{ event.toLowerCase() }}'
+@end
+@end
 
 export default class {{ entity.className }}Controller {
   @each(action in actions)

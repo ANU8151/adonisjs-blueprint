@@ -1,0 +1,12 @@
+{{{
+  exports({
+    to: app.makePath('app/events', entity.path, entity.name.toLowerCase() + '.ts')
+  })
+}}}
+import { BaseEvent } from '@adonisjs/core/events'
+
+export default class {{ entity.className }} extends BaseEvent {
+  constructor(public payload: any) {
+    super()
+  }
+}
