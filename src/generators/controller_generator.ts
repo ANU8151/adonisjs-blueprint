@@ -1,7 +1,9 @@
 import { BaseGenerator } from './base_generator.js'
-import { stubsRoot } from '../../stubs/main.js'
 import type { Entity } from '../types.js'
-import { ClassGenerator } from './class_generator.js'
+import { EventGenerator } from './event_generator.js'
+import { MailGenerator } from './mail_generator.js'
+import { JobGenerator } from './job_generator.js'
+import string from '@adonisjs/core/helpers/string'
 
 export class ControllerGenerator extends BaseGenerator {
   async generate(
@@ -13,7 +15,11 @@ export class ControllerGenerator extends BaseGenerator {
     const nameParts = name.split('.')
     const baseName = nameParts.pop()! // Handle nested names like Post.Comment
     const entity = this.app.generators.createEntity(baseName) as Entity
-    const classGenerator = new ClassGenerator(this.app, this.logger)
+
+    const eventGenerator = new EventGenerator(this.app, this.logger, this.manifest)
+    const mailGenerator = new MailGenerator(this.app, this.logger, this.manifest)
+    const jobGenerator = new JobGenerator(this.app, this.logger, this.manifest)
+
     const actions: any[] = []
     const imports = {
       models: new Set<string>(),
@@ -23,6 +29,9 @@ export class ControllerGenerator extends BaseGenerator {
     }
 
     const middleware = definition.middleware || []
+
+    const pluralName = string.plural(string.camelCase(entity.name))
+    const singularName = string.camelCase(entity.name)
 
     // Support resource: true shorthand
     let normalizedDefinition = definition
@@ -36,17 +45,17 @@ export class ControllerGenerator extends BaseGenerator {
             destroy: { delete: true, render: 'json' },
           }
         : {
-            index: { render: `${entity.name.toLowerCase()}s/index` },
-            create: { render: `${entity.name.toLowerCase()}s/create` },
-            store: { validate: 'all', save: true, redirect: `${entity.name.toLowerCase()}s.index` },
-            show: { render: `${entity.name.toLowerCase()}s/show` },
-            edit: { render: `${entity.name.toLowerCase()}s/edit` },
+            index: { render: `${pluralName}/index` },
+            create: { render: `${pluralName}/create` },
+            store: { validate: 'all', save: true, redirect: `${pluralName}.index` },
+            show: { render: `${pluralName}/show` },
+            edit: { render: `${pluralName}/edit` },
             update: {
               validate: 'all',
               save: true,
-              redirect: `${entity.name.toLowerCase()}s.index`,
+              redirect: `${pluralName}.index`,
             },
-            destroy: { delete: true, redirect: `${entity.name.toLowerCase()}s.index` },
+            destroy: { delete: true, redirect: `${pluralName}.index` },
           }
     }
 
@@ -61,7 +70,7 @@ export class ControllerGenerator extends BaseGenerator {
           const queryParts = typedDef.query.split(':')
           const queryType = queryParts[0]
           const variableName =
-            entity.name.toLowerCase() + (queryType === 'all' || queryType === 'paginate' ? 's' : '')
+            queryType === 'all' || queryType === 'paginate' ? pluralName : singularName
 
           if (queryType === 'all') {
             logicLines.push(`const ${variableName} = await ${entity.className}.all()`)
@@ -114,21 +123,21 @@ export class ControllerGenerator extends BaseGenerator {
           const eventName = typedDef.fire
           logicLines.push(`emitter.emit(new ${eventName}(payload))`)
           imports.events.add(eventName)
-          await classGenerator.generate(eventName, 'event')
+          await eventGenerator.generate(eventName)
           if (!context.includes('emitter')) context += ', emitter'
         }
 
         if (typedDef.send) {
           const mailName = typedDef.send
           logicLines.push(`await mail.sendLater(new ${mailName}(payload))`)
-          await classGenerator.generate(mailName, 'mail')
+          await mailGenerator.generate(mailName)
           if (!context.includes('mail')) context += ', mail'
         }
 
         if (typedDef.dispatch) {
           const jobName = typedDef.dispatch
           logicLines.push(`await new ${jobName}(payload).handle()`)
-          await classGenerator.generate(jobName, 'job')
+          await jobGenerator.generate(jobName)
         }
 
         if (typedDef.auth) {
@@ -176,7 +185,7 @@ export class ControllerGenerator extends BaseGenerator {
       })
     }
 
-    await this.codemods.makeUsingStub(stubsRoot, 'make/controller/main.stub', {
+    await this.generateStub('make/controller/main.stub', {
       entity,
       actions,
       middleware,

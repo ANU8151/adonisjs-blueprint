@@ -1,0 +1,39 @@
+settings:
+  api: true
+
+models:
+  Post:
+    title: string:min:5
+    content: text
+    status: enum:draft,published,archived
+    softDeletes: true
+    relationships:
+      comments: hasMany
+      tags: belongsToMany
+
+  Comment:
+    content: text
+    relationships:
+      post: belongsTo
+
+  Tag:
+    name: string:unique
+
+controllers:
+  Post:
+    resource: true
+    publish:
+      query: find
+      validate: title, content
+      save: true
+      fire: PostPublished
+      send: NewPostMail
+      dispatch: SyncToElasticsearch
+      render: json with: post
+  
+  Comment:
+    middleware: [auth, logRequest]
+    store:
+      validate: content
+      save: true
+      redirect: posts.show

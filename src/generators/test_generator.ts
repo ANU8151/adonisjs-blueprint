@@ -1,5 +1,4 @@
 import { BaseGenerator } from './base_generator.js'
-import { stubsRoot } from '../../stubs/main.js'
 import type { Entity } from '../types.js'
 
 export class TestGenerator extends BaseGenerator {
@@ -11,7 +10,7 @@ export class TestGenerator extends BaseGenerator {
       actions.push({ name: actionName })
     }
 
-    await this.codemods.makeUsingStub(stubsRoot, 'make/test/controller.stub', {
+    await this.generateStub('make/test/controller.stub', {
       entity,
       actions,
     })

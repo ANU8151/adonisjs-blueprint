@@ -1,5 +1,4 @@
 import { BaseGenerator } from './base_generator.js'
-import { stubsRoot } from '../../stubs/main.js'
 import type { Entity } from '../types.js'
 
 export class ModelGenerator extends BaseGenerator {
@@ -41,7 +40,7 @@ export class ModelGenerator extends BaseGenerator {
       }
     }
 
-    await this.codemods.makeUsingStub(stubsRoot, 'make/model/main.stub', {
+    await this.generateStub('make/model/main.stub', {
       entity,
       relationships,
       modelImports,

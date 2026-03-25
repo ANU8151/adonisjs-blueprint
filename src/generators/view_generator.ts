@@ -1,6 +1,4 @@
 import { BaseGenerator } from './base_generator.js'
-import { stubsRoot } from '../../stubs/main.js'
-
 export class ViewGenerator extends BaseGenerator {
   async generate(
     name: string,
@@ -14,7 +12,7 @@ export class ViewGenerator extends BaseGenerator {
       stubPath = `make/view/${adapter}.stub`
     }
 
-    await this.codemods.makeUsingStub(stubsRoot, stubPath, {
+    await this.generateStub(stubPath, {
       entity,
     })
   }

@@ -1,6 +1,6 @@
 import { BaseGenerator } from './base_generator.js'
-import { stubsRoot } from '../../stubs/main.js'
 import type { Entity } from '../types.js'
+import string from '@adonisjs/core/helpers/string'
 
 export class MigrationGenerator extends BaseGenerator {
   async generate(name: string, definition: any) {
@@ -13,7 +13,7 @@ export class MigrationGenerator extends BaseGenerator {
         let migrationLine = ''
         if (typeof attrType === 'string') {
           if (attrType === 'foreign') {
-            migrationLine = `table.integer('${attrName}').unsigned().references('id').inTable('${attrName.replace('_id', 's')}')`
+            migrationLine = `table.integer('${attrName}').unsigned().references('id').inTable('${string.plural(attrName.replace('_id', ''))}')`
           } else if (attrType.startsWith('enum:')) {
             const values = attrType
               .split(':')[1]
@@ -35,7 +35,7 @@ export class MigrationGenerator extends BaseGenerator {
       for (const [relName, relType] of Object.entries(definition.relationships)) {
         if (relType === 'belongsTo' && !processedAttributes.has(`${relName}_id`)) {
           attributes.push({
-            migrationLine: `table.integer('${relName}_id').unsigned().references('id').inTable('${relName}s').onDelete('CASCADE')`,
+            migrationLine: `table.integer('${relName}_id').unsigned().references('id').inTable('${string.plural(relName)}').onDelete('CASCADE')`,
           })
         }
       }
@@ -46,10 +46,10 @@ export class MigrationGenerator extends BaseGenerator {
       attributes.push({ migrationLine: `table.timestamp('deleted_at')` })
     }
 
-    await this.codemods.makeUsingStub(stubsRoot, 'make/migration/main.stub', {
+    await this.generateStub('make/migration/main.stub', {
       entity: {
         ...entity,
-        tableName: entity.name.toLowerCase() + 's',
+        tableName: string.plural(string.snakeCase(entity.name)),
       },
       attributes,
     })
@@ -65,21 +65,21 @@ export class MigrationGenerator extends BaseGenerator {
   }
 
   private async generatePivotMigration(modelA: string, modelB: string) {
-    const models = [modelA.toLowerCase(), modelB.toLowerCase()].sort()
+    const models = [string.snakeCase(modelA), string.snakeCase(modelB)].sort()
     const tableName = `${models[0]}_${models[1]}`
     const entity = this.app.generators.createEntity(tableName)
 
-    await this.codemods.makeUsingStub(stubsRoot, 'make/migration/main.stub', {
+    await this.generateStub('make/migration/main.stub', {
       entity: {
         ...entity,
         tableName,
       },
       attributes: [
         {
-          migrationLine: `table.integer('${models[0]}_id').unsigned().references('id').inTable('${models[0]}s').onDelete('CASCADE')`,
+          migrationLine: `table.integer('${models[0]}_id').unsigned().references('id').inTable('${string.plural(models[0])}').onDelete('CASCADE')`,
         },
         {
-          migrationLine: `table.integer('${models[1]}_id').unsigned().references('id').inTable('${models[1]}s').onDelete('CASCADE')`,
+          migrationLine: `table.integer('${models[1]}_id').unsigned().references('id').inTable('${string.plural(models[1])}').onDelete('CASCADE')`,
         },
       ],
     })

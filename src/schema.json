@@ -5,7 +5,7 @@
     "settings": {
       "type": "object",
       "properties": {
-        "api": { "type": "boolean" },
+        "api": { "type": "boolean", "description": "Generate an API-only application" },
         "inertia": {
           "type": "object",
           "properties": {
@@ -15,26 +15,68 @@
         }
       }
     },
-    "auth": { "type": ["boolean", "object"] },
+    "auth": {
+      "type": ["boolean", "object"],
+      "description": "Scaffold basic authentication"
+    },
     "models": {
       "type": "object",
+      "description": "Define your Lucid models",
       "additionalProperties": {
         "type": "object",
+        "properties": {
+          "softDeletes": { "type": "boolean" },
+          "relationships": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "enum": ["hasOne", "hasMany", "belongsTo", "belongsToMany"]
+            }
+          }
+        },
         "additionalProperties": { "type": ["string", "object"] }
       }
     },
     "controllers": {
       "type": "object",
+      "description": "Define your HTTP controllers",
       "additionalProperties": {
         "type": "object",
         "properties": {
-          "resource": { "type": "boolean" },
+          "resource": { "type": "boolean", "description": "Generate standard resource methods" },
           "middleware": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": { "type": "string" },
+            "description": "Middleware to apply to the controller"
           }
         },
-        "additionalProperties": { "type": "object" }
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Lucid query (e.g. all, paginate:20, find)"
+            },
+            "validate": { "type": "string", "description": "VineJS validation attributes" },
+            "authorize": {
+              "type": "string",
+              "description": "Bouncer authorization (e.g. action, model)"
+            },
+            "save": { "type": ["boolean", "string"], "description": "Save a model" },
+            "delete": { "type": ["boolean", "string"], "description": "Delete a model" },
+            "fire": { "type": "string", "description": "Fire an event" },
+            "send": { "type": "string", "description": "Send a mail" },
+            "dispatch": { "type": "string", "description": "Dispatch a job" },
+            "render": { "type": "string", "description": "Render a view or json" },
+            "redirect": { "type": "string", "description": "Redirect to a route" },
+            "flash": { "type": "string", "description": "Flash a success message" },
+            "auth": {
+              "type": ["boolean", "string"],
+              "description": "Require authentication or logout"
+            }
+          },
+          "additionalProperties": false
+        }
       }
     }
   }

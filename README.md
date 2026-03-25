@@ -45,6 +45,7 @@ settings:
 ## Usage
 
 ### 1. Create a `draft.yaml` file
+
 Define your application structure in a `draft.yaml` file in your project root.
 
 ```yaml
@@ -77,6 +78,7 @@ controllers:
 ```
 
 ### 2. Build your application
+
 Run the build command to generate all files:
 
 ```sh
@@ -84,6 +86,7 @@ node ace blueprint:build
 ```
 
 For a seamless experience, use the **Watch Mode**:
+
 ```sh
 node ace blueprint:build --watch
 ```

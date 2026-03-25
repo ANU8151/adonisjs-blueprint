@@ -1,5 +1,5 @@
 import { BaseGenerator } from './base_generator.js'
-import { stubsRoot } from '../../stubs/main.js'
+import string from '@adonisjs/core/helpers/string'
 
 export class ValidatorGenerator extends BaseGenerator {
   async generate(name: string, definition: any) {
@@ -27,7 +27,8 @@ export class ValidatorGenerator extends BaseGenerator {
           const modifier = parts[i]
           if (modifier === 'unique') {
             // Basic unique representation
-            vineChain += `.unique(async (db, value) => { return !await db.from('${entity.name.toLowerCase()}s').where('${attrName}', value).first() })`
+            const tableName = string.plural(string.snakeCase(entity.name))
+            vineChain += `.unique(async (db, value) => { return !await db.from('${tableName}').where('${attrName}', value).first() })`
           } else if (modifier === 'min' && parts[i + 1]) {
             vineChain +=
               baseType === 'number' ? `.min(${parts[i + 1]})` : `.minLength(${parts[i + 1]})`
@@ -49,7 +50,7 @@ export class ValidatorGenerator extends BaseGenerator {
       }
     }
 
-    await this.codemods.makeUsingStub(stubsRoot, 'make/validator/main.stub', {
+    await this.generateStub('make/validator/main.stub', {
       entity,
       attributes,
     })

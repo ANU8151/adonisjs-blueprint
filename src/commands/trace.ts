@@ -1,6 +1,7 @@
 import { BaseCommand } from '@adonisjs/core/ace'
 import { writeFileSync } from 'node:fs'
 import { stringify } from 'yaml'
+import string from '@adonisjs/core/helpers/string'
 
 export default class TraceBlueprint extends BaseCommand {
   static commandName = 'blueprint:trace'
@@ -25,11 +26,7 @@ export default class TraceBlueprint extends BaseCommand {
           continue
         }
 
-        const modelName = table.name
-          .split('_')
-          .map((p: string) => p.charAt(0).toUpperCase() + p.slice(1))
-          .join('')
-          .replace(/s$/, '') // Simple singularization
+        const modelName = string.pascalCase(string.singular(table.name))
 
         draft.models[modelName] = {
           attributes: {},
@@ -37,14 +34,14 @@ export default class TraceBlueprint extends BaseCommand {
 
         const columns = await connection.getColumns(table.name)
         for (const column of columns) {
-          if (['id', 'created_at', 'updated_at'].includes(column.defaultValue)) continue
+          if (['id', 'created_at', 'updated_at'].includes(column.name)) continue
 
           let type = 'string'
           if (column.type === 'integer' || column.type === 'int') type = 'integer'
           if (column.type === 'boolean' || column.type === 'tinyint') type = 'boolean'
           if (column.type === 'timestamp' || column.type === 'datetime') type = 'timestamp'
 
-          draft.models[modelName].attributes[column.defaultValue] = type
+          draft.models[modelName].attributes[column.name] = type
         }
       }
 

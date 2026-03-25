@@ -1,5 +1,4 @@
 import { BaseGenerator } from './base_generator.js'
-import { stubsRoot } from '../../stubs/main.js'
 import type { Entity } from '../types.js'
 
 export class PolicyGenerator extends BaseGenerator {
@@ -35,7 +34,7 @@ export class PolicyGenerator extends BaseGenerator {
       )
     }
 
-    await this.codemods.makeUsingStub(stubsRoot, 'make/policy/main.stub', {
+    await this.generateStub('make/policy/main.stub', {
       entity,
       actions,
     })

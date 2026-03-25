@@ -1,4 +1,5 @@
 import { BaseCommand, args, flags } from '@adonisjs/core/ace'
+import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs'
 import { BlueprintParser } from '../parser.js'
 import { ModelGenerator } from '../generators/model_generator.js'
 import { MigrationGenerator } from '../generators/migration_generator.js'
@@ -11,6 +12,8 @@ import { ViewGenerator } from '../generators/view_generator.js'
 import { SeederGenerator } from '../generators/seeder_generator.js'
 import { PolicyGenerator } from '../generators/policy_generator.js'
 import { EnumGenerator } from '../generators/enum_generator.js'
+import { MiddlewareGenerator } from '../generators/middleware_generator.js'
+import string from '@adonisjs/core/helpers/string'
 
 export class BuildBlueprint extends BaseCommand {
   static commandName = 'blueprint:build'
@@ -19,11 +22,13 @@ export class BuildBlueprint extends BaseCommand {
   @args.string({ description: 'The draft file to build from', default: 'draft.yaml' })
   declare draftFile: string
 
-  @flags.boolean({ alias: 'e', description: 'Erase existing files' })
+  @flags.boolean({ alias: 'e', description: 'Erase existing files before building' })
   declare erase: boolean
 
   @flags.boolean({ alias: 'w', description: 'Watch the draft file for changes' })
   declare watch: boolean
+
+  private manifest: string[] = []
 
   async run() {
     if (this.watch) {
@@ -44,11 +49,33 @@ export class BuildBlueprint extends BaseCommand {
     await this.build()
   }
 
+  private async eraseExisting() {
+    const manifestPath = this.app.makePath('.blueprint_manifest.json')
+    if (existsSync(manifestPath)) {
+      this.logger.info('Erasing existing generated files...')
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+      const files: string[] = manifest.files || []
+
+      for (const file of files) {
+        if (existsSync(file)) {
+          unlinkSync(file)
+          this.logger.action(`deleted ${file}`).succeeded()
+        }
+      }
+      unlinkSync(manifestPath)
+    }
+  }
+
   private async build() {
+    if (this.erase) {
+      await this.eraseExisting()
+    }
+
     this.logger.info('Building application from ' + this.draftFile)
 
     const parser = new BlueprintParser()
     const blueprint = await parser.parse(this.draftFile)
+    this.manifest = []
 
     if (blueprint.auth) {
       this.logger.info('Auth shorthand detected.')
@@ -68,12 +95,12 @@ export class BuildBlueprint extends BaseCommand {
     }
 
     if (blueprint.models) {
-      const modelGenerator = new ModelGenerator(this.app, this.logger)
-      const migrationGenerator = new MigrationGenerator(this.app, this.logger)
-      const validatorGenerator = new ValidatorGenerator(this.app, this.logger)
-      const factoryGenerator = new FactoryGenerator(this.app, this.logger)
-      const seederGenerator = new SeederGenerator(this.app, this.logger)
-      const enumGenerator = new EnumGenerator(this.app, this.logger)
+      const modelGenerator = new ModelGenerator(this.app, this.logger, this.manifest)
+      const migrationGenerator = new MigrationGenerator(this.app, this.logger, this.manifest)
+      const validatorGenerator = new ValidatorGenerator(this.app, this.logger, this.manifest)
+      const factoryGenerator = new FactoryGenerator(this.app, this.logger, this.manifest)
+      const seederGenerator = new SeederGenerator(this.app, this.logger, this.manifest)
+      const enumGenerator = new EnumGenerator(this.app, this.logger, this.manifest)
 
       for (const [name, definition] of Object.entries(blueprint.models)) {
         this.logger.info(`Generating model, migration, validator, factory and seeder for ${name}`)
@@ -87,7 +114,7 @@ export class BuildBlueprint extends BaseCommand {
         if ((definition as any).attributes) {
           for (const [attrName, attrType] of Object.entries((definition as any).attributes)) {
             if (typeof attrType === 'string' && attrType.startsWith('enum:')) {
-              const enumName = `${name.charAt(0).toUpperCase() + name.slice(1)}${attrName.charAt(0).toUpperCase() + attrName.slice(1)}`
+              const enumName = string.pascalCase(name + '_' + attrName)
               const values = attrType
                 .split(':')[1]
                 .split(',')
@@ -101,11 +128,12 @@ export class BuildBlueprint extends BaseCommand {
     }
 
     if (blueprint.controllers) {
-      const controllerGenerator = new ControllerGenerator(this.app, this.logger)
-      const routeGenerator = new RouteGenerator(this.app, this.logger)
-      const testGenerator = new TestGenerator(this.app, this.logger)
-      const viewGenerator = new ViewGenerator(this.app, this.logger)
-      const policyGenerator = new PolicyGenerator(this.app, this.logger)
+      const controllerGenerator = new ControllerGenerator(this.app, this.logger, this.manifest)
+      const routeGenerator = new RouteGenerator(this.app, this.logger, this.manifest)
+      const testGenerator = new TestGenerator(this.app, this.logger, this.manifest)
+      const viewGenerator = new ViewGenerator(this.app, this.logger, this.manifest)
+      const policyGenerator = new PolicyGenerator(this.app, this.logger, this.manifest)
+      const middlewareGenerator = new MiddlewareGenerator(this.app, this.logger, this.manifest)
 
       const useInertia = blueprint.settings?.inertia?.enabled || false
       const adapter = blueprint.settings?.inertia?.adapter || 'react'
@@ -118,6 +146,17 @@ export class BuildBlueprint extends BaseCommand {
         await testGenerator.generate(name, definition)
         await policyGenerator.generate(name, definition)
 
+        // Generate custom middleware if specified
+        if (definition.middleware) {
+          for (const mw of definition.middleware) {
+            // Only generate if it looks like a custom middleware name (not a core one like 'auth')
+            if (!['auth', 'guest', 'silentAuth'].includes(mw)) {
+              this.logger.info(`Generating middleware ${mw}`)
+              await middlewareGenerator.generate(mw)
+            }
+          }
+        }
+
         // Generate views only if not API mode
         if (!isApi) {
           for (const actionDef of Object.values(definition)) {
@@ -129,6 +168,13 @@ export class BuildBlueprint extends BaseCommand {
           }
         }
       }
+    }
+
+    // Save manifest
+    if (this.manifest.length > 0) {
+      const manifestPath = this.app.makePath('.blueprint_manifest.json')
+      writeFileSync(manifestPath, JSON.stringify({ files: this.manifest }, null, 2))
+      this.logger.info(`Manifest saved to ${manifestPath}`)
     }
 
     this.logger.success('Application built successfully')

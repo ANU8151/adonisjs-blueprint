@@ -1,6 +1,4 @@
 import { BaseGenerator } from './base_generator.js'
-import { stubsRoot } from '../../stubs/main.js'
-
 export class FactoryGenerator extends BaseGenerator {
   async generate(name: string, definition: any) {
     const entity = this.app.generators.createEntity(name)
@@ -41,7 +39,7 @@ export class FactoryGenerator extends BaseGenerator {
       }
     }
 
-    await this.codemods.makeUsingStub(stubsRoot, 'make/factory/main.stub', {
+    await this.generateStub('make/factory/main.stub', {
       entity,
       attributes,
       relationships,
