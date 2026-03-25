@@ -28,6 +28,9 @@ export class BuildBlueprint extends BaseCommand {
   @flags.boolean({ alias: 'w', description: 'Watch the draft file for changes' })
   declare watch: boolean
 
+  @flags.boolean({ alias: 'f', description: 'Force overwrite existing files' })
+  declare force: boolean
+
   private manifest: string[] = []
 
   async run() {
@@ -101,13 +104,51 @@ export class BuildBlueprint extends BaseCommand {
       }
     }
 
+    const forceOverwrite = this.force || this.erase
+
     if (blueprint.models) {
-      const modelGenerator = new ModelGenerator(this.app, this.logger, this.manifest)
-      const migrationGenerator = new MigrationGenerator(this.app, this.logger, this.manifest)
-      const validatorGenerator = new ValidatorGenerator(this.app, this.logger, this.manifest)
-      const factoryGenerator = new FactoryGenerator(this.app, this.logger, this.manifest)
-      const seederGenerator = new SeederGenerator(this.app, this.logger, this.manifest)
-      const enumGenerator = new EnumGenerator(this.app, this.logger, this.manifest)
+      const modelGenerator = new ModelGenerator(
+        this.app,
+        this.logger,
+        this.manifest,
+        undefined,
+        forceOverwrite
+      )
+      const migrationGenerator = new MigrationGenerator(
+        this.app,
+        this.logger,
+        this.manifest,
+        undefined,
+        forceOverwrite
+      )
+      const validatorGenerator = new ValidatorGenerator(
+        this.app,
+        this.logger,
+        this.manifest,
+        undefined,
+        forceOverwrite
+      )
+      const factoryGenerator = new FactoryGenerator(
+        this.app,
+        this.logger,
+        this.manifest,
+        undefined,
+        forceOverwrite
+      )
+      const seederGenerator = new SeederGenerator(
+        this.app,
+        this.logger,
+        this.manifest,
+        undefined,
+        forceOverwrite
+      )
+      const enumGenerator = new EnumGenerator(
+        this.app,
+        this.logger,
+        this.manifest,
+        undefined,
+        forceOverwrite
+      )
 
       for (const [name, definition] of Object.entries(blueprint.models)) {
         this.logger.info(`Generating model, migration, validator, factory and seeder for ${name}`)
@@ -135,12 +176,48 @@ export class BuildBlueprint extends BaseCommand {
     }
 
     if (blueprint.controllers) {
-      const controllerGenerator = new ControllerGenerator(this.app, this.logger, this.manifest)
-      const routeGenerator = new RouteGenerator(this.app, this.logger, this.manifest)
-      const testGenerator = new TestGenerator(this.app, this.logger, this.manifest)
-      const viewGenerator = new ViewGenerator(this.app, this.logger, this.manifest)
-      const policyGenerator = new PolicyGenerator(this.app, this.logger, this.manifest)
-      const middlewareGenerator = new MiddlewareGenerator(this.app, this.logger, this.manifest)
+      const controllerGenerator = new ControllerGenerator(
+        this.app,
+        this.logger,
+        this.manifest,
+        undefined,
+        forceOverwrite
+      )
+      const routeGenerator = new RouteGenerator(
+        this.app,
+        this.logger,
+        this.manifest,
+        undefined,
+        forceOverwrite
+      )
+      const testGenerator = new TestGenerator(
+        this.app,
+        this.logger,
+        this.manifest,
+        undefined,
+        forceOverwrite
+      )
+      const viewGenerator = new ViewGenerator(
+        this.app,
+        this.logger,
+        this.manifest,
+        undefined,
+        forceOverwrite
+      )
+      const policyGenerator = new PolicyGenerator(
+        this.app,
+        this.logger,
+        this.manifest,
+        undefined,
+        forceOverwrite
+      )
+      const middlewareGenerator = new MiddlewareGenerator(
+        this.app,
+        this.logger,
+        this.manifest,
+        undefined,
+        forceOverwrite
+      )
 
       const useInertia = blueprint.settings?.inertia?.enabled || false
       const adapter = blueprint.settings?.inertia?.adapter || 'react'

@@ -30,11 +30,24 @@ export default class TraceBlueprint extends BaseCommand {
 
         draft.models[modelName] = {
           attributes: {},
+          relationships: {},
         }
 
         const columns = await connection.getColumns(table.name)
         for (const column of columns) {
-          if (['id', 'created_at', 'updated_at'].includes(column.name)) continue
+          if (['id', 'created_at', 'updated_at', 'deleted_at'].includes(column.name)) {
+            if (column.name === 'deleted_at') {
+              draft.models[modelName].softDeletes = true
+            }
+            continue
+          }
+
+          // Detect relationships via _id suffix
+          if (column.name.endsWith('_id')) {
+            const relName = string.camelCase(column.name.replace('_id', ''))
+            draft.models[modelName].relationships[relName] = 'belongsTo'
+            continue
+          }
 
           let type = 'string'
           if (column.type === 'integer' || column.type === 'int') type = 'integer'
@@ -42,6 +55,14 @@ export default class TraceBlueprint extends BaseCommand {
           if (column.type === 'timestamp' || column.type === 'datetime') type = 'timestamp'
 
           draft.models[modelName].attributes[column.name] = type
+        }
+
+        // Cleanup if empty
+        if (Object.keys(draft.models[modelName].attributes).length === 0) {
+          delete draft.models[modelName].attributes
+        }
+        if (Object.keys(draft.models[modelName].relationships).length === 0) {
+          delete draft.models[modelName].relationships
         }
       }
 

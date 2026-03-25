@@ -85,12 +85,16 @@ export class ModelGenerator extends BaseGenerator {
       })
     }
 
-    await this.generateStub('make/model/main.stub', {
-      entity,
-      attributes,
-      relationships,
-      modelImports,
-      modelSignature,
-    })
+    await this.generateStub(
+      'make/model/main.stub',
+      {
+        entity,
+        attributes,
+        relationships,
+        modelImports,
+        modelSignature,
+      },
+      definition.stub
+    )
   }
 }

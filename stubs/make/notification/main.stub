@@ -1,0 +1,28 @@
+{{{
+  exports({
+    to: app.makePath('app/notifications', entity.path, string.snakeCase(entity.name) + '_notification.ts')
+  })
+}}}
+import { Notification } from '@adonisjs/notifications'
+
+export default class {{ entity.className }}Notification extends Notification {
+  constructor(public payload: any) {
+    super()
+  }
+
+  /**
+   * The notification channels to use
+   */
+  via() {
+    return ['mail']
+  }
+
+  /**
+   * Mail representation
+   */
+  toMail() {
+    return this.mail()
+      .subject('Notification')
+      .line('Your notification message')
+  }
+}

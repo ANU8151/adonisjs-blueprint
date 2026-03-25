@@ -20,13 +20,26 @@ export class ValidatorGenerator extends BaseGenerator {
           vineChain = 'vine.boolean()'
         } else if (baseType === 'email') {
           vineChain = 'vine.string().email()'
+        } else if (baseType === 'url') {
+          vineChain = 'vine.string().url()'
+        } else if (baseType === 'ip') {
+          vineChain = 'vine.string().ip()'
+        } else if (baseType === 'uuid') {
+          vineChain = 'vine.string().uuid()'
+        } else if (baseType === 'mobile') {
+          vineChain = 'vine.string().mobile()'
+        } else if (baseType === 'postalCode') {
+          vineChain = 'vine.string().postalCode()'
+        } else if (baseType === 'creditCard') {
+          vineChain = 'vine.string().creditCard()'
+        } else if (baseType === 'macAddress') {
+          vineChain = 'vine.string().macAddress()'
         }
 
         // Apply modifiers
         for (let i = 1; i < parts.length; i++) {
           const modifier = parts[i]
           if (modifier === 'unique') {
-            // Basic unique representation
             const tableName = string.plural(string.snakeCase(entity.name))
             vineChain += `.unique(async (db, value) => { return !await db.from('${tableName}').where('${attrName}', value).first() })`
           } else if (modifier === 'min' && parts[i + 1]) {
@@ -50,9 +63,13 @@ export class ValidatorGenerator extends BaseGenerator {
       }
     }
 
-    await this.generateStub('make/validator/main.stub', {
-      entity,
-      attributes,
-    })
+    await this.generateStub(
+      'make/validator/main.stub',
+      {
+        entity,
+        attributes,
+      },
+      definition.stub
+    )
   }
 }

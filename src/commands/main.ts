@@ -3,4 +3,5 @@ export const commands = [
   () => import('./erase.js'),
   () => import('./trace.js'),
   () => import('./stubs.js'),
+  () => import('./init.js'),
 ]

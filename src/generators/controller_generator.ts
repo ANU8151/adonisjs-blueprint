@@ -1,8 +1,10 @@
 import { BaseGenerator } from './base_generator.js'
+
 import type { Entity } from '../types.js'
 import { EventGenerator } from './event_generator.js'
 import { MailGenerator } from './mail_generator.js'
 import { JobGenerator } from './job_generator.js'
+import { NotificationGenerator } from './notification_generator.js'
 import string from '@adonisjs/core/helpers/string'
 
 export class ControllerGenerator extends BaseGenerator {
@@ -19,6 +21,7 @@ export class ControllerGenerator extends BaseGenerator {
     const eventGenerator = new EventGenerator(this.app, this.logger, this.manifest)
     const mailGenerator = new MailGenerator(this.app, this.logger, this.manifest)
     const jobGenerator = new JobGenerator(this.app, this.logger, this.manifest)
+    const notificationGenerator = new NotificationGenerator(this.app, this.logger, this.manifest)
 
     const actions: any[] = []
     const imports = {
@@ -140,6 +143,24 @@ export class ControllerGenerator extends BaseGenerator {
           await jobGenerator.generate(jobName)
         }
 
+        if (typedDef.notify) {
+          const notifyParts = typedDef.notify.split(', ')
+          const target = notifyParts[0].trim()
+          const notificationName = notifyParts[1].trim()
+          logicLines.push(`await ${target}.notify(new ${notificationName}(payload))`)
+          await notificationGenerator.generate(notificationName)
+        }
+
+        if (typedDef.upload) {
+          const uploadParts = typedDef.upload.split(' to: ')
+          const field = uploadParts[0].trim()
+          const disk = uploadParts[1] ? `, '${uploadParts[1].trim()}'` : ''
+          logicLines.push(
+            `const ${field}File = request.file('${field}', { size: '2mb', extnames: ['jpg', 'png', 'pdf'] })!`
+          )
+          logicLines.push(`await ${field}File.moveToDisk(''${disk})`)
+        }
+
         if (typedDef.auth) {
           logicLines.push(`const user = auth.user!`)
           if (!context.includes('auth')) context += ', auth'
@@ -185,16 +206,20 @@ export class ControllerGenerator extends BaseGenerator {
       })
     }
 
-    await this.generateStub('make/controller/main.stub', {
-      entity,
-      actions,
-      middleware,
-      imports: {
-        models: Array.from(imports.models),
-        validators: Array.from(imports.validators),
-        events: Array.from(imports.events),
-        policies: Array.from(imports.policies),
+    await this.generateStub(
+      'make/controller/main.stub',
+      {
+        entity,
+        actions,
+        middleware,
+        imports: {
+          models: Array.from(imports.models),
+          validators: Array.from(imports.validators),
+          events: Array.from(imports.events),
+          policies: Array.from(imports.policies),
+        },
       },
-    })
+      definition.stub
+    )
   }
 }

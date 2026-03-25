@@ -26,6 +26,7 @@
         "type": "object",
         "properties": {
           "softDeletes": { "type": "boolean" },
+          "stub": { "type": "string", "description": "Custom stub path for this model" },
           "relationships": {
             "type": "object",
             "additionalProperties": {
@@ -44,6 +45,7 @@
         "type": "object",
         "properties": {
           "resource": { "type": "boolean", "description": "Generate standard resource methods" },
+          "stub": { "type": "string", "description": "Custom stub path for this controller" },
           "middleware": {
             "type": "array",
             "items": { "type": "string" },
@@ -67,7 +69,12 @@
             "fire": { "type": "string", "description": "Fire an event" },
             "send": { "type": "string", "description": "Send a mail" },
             "dispatch": { "type": "string", "description": "Dispatch a job" },
+            "notify": {
+              "type": "string",
+              "description": "Send a notification (e.g. user, NewPostNotification)"
+            },
             "render": { "type": "string", "description": "Render a view or json" },
+            "upload": { "type": "string", "description": "Upload a file (e.g. avatar to: s3)" },
             "redirect": { "type": "string", "description": "Redirect to a route" },
             "flash": { "type": "string", "description": "Flash a success message" },
             "auth": {
