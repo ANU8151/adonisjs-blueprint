@@ -78,18 +78,25 @@ export class BuildBlueprint extends BaseCommand {
     this.manifest = []
 
     if (blueprint.auth) {
-      this.logger.info('Auth shorthand detected.')
-      this.logger.warning('AdonisJS 7 provides a native, highly secure auth scaffolding.')
-      this.logger.action('Please run: node ace add auth').succeeded()
-
-      // We can also auto-inject a simple AuthController into the blueprint definition here
+      this.logger.info('Auth shorthand detected. Injecting AuthController...')
       if (!blueprint.controllers) blueprint.controllers = {}
       if (!blueprint.controllers['Auth']) {
         blueprint.controllers['Auth'] = {
           login: { render: 'auth/login' },
           register: { render: 'auth/register' },
-          store: { validate: 'email, password', auth: 'true', redirect: 'home' },
-          logout: { auth: 'logout', redirect: 'home' },
+          store: { validate: 'email, password', auth: 'true', redirect: 'dashboard' },
+          logout: { auth: 'logout', redirect: 'login' },
+        }
+      }
+
+      if (!blueprint.models) blueprint.models = {}
+      if (!blueprint.models['User']) {
+        blueprint.models['User'] = {
+          attributes: {
+            email: 'string:unique',
+            password: 'string',
+            full_name: 'string:optional',
+          },
         }
       }
     }

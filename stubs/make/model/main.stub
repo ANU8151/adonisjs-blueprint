@@ -5,12 +5,15 @@
 }}}
 {{{ modelImports }}}
 @each(relationship in relationships)
-{{ relationship.importLine }}
+{{{ relationship.importLine }}}
 @end
 
 {{{ modelSignature }}}
+  @each(attribute in attributes)
+  {{{ attribute.line }}}
+  @end
+
   @each(relationship in relationships)
-  {{ relationship.line }}
+  {{{ relationship.line }}}
   @end
 }
-

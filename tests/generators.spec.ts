@@ -99,10 +99,15 @@ test.group('Generators', () => {
                     const loopBody = eachAttrMatch[1]
                     const replacement = state.attributes
                       .map((attr: any) => {
-                        let line = loopBody.replace(/{{ attribute.name }}/g, attr.name)
-                        line = line.replace(/{{ attribute.vineType }}/g, attr.vineType)
-                        line = line.replace(/{{ attribute.fakerMethod }}/g, attr.fakerMethod)
-                        line = line.replace(/{{ attribute.migrationLine }}/g, attr.migrationLine)
+                        let line = loopBody.replace(/{{ attribute.name }}/g, attr.name || '')
+                        line = line.replace(/{{ attribute.vineType }}/g, attr.vineType || '')
+                        line = line.replace(/{{ attribute.fakerMethod }}/g, attr.fakerMethod || '')
+                        line = line.replace(
+                          /{{ attribute.migrationLine }}/g,
+                          attr.migrationLine || ''
+                        )
+                        // Handle {{{ attribute.line }}}
+                        line = line.replace(/{{{ attribute.line }}}/g, attr.line || '')
                         return line
                       })
                       .join('\n')
@@ -125,11 +130,40 @@ test.group('Generators', () => {
                         let line = loopBody.replace(/{{ action.name }}/g, action.name)
                         line = line.replace(/{{ action.context }}/g, action.context)
                         line = line.replace(/{{ action.logic }}/g, action.logic)
+                        line = line.replace(/{{ action.method }}/g, action.method)
+                        line = line.replace(/{{ action.url }}/g, action.url)
+                        line = line.replace(/{{ action.variableName }}/g, action.variableName)
+                        line = line.replace(/{{ action.modelName }}/g, action.modelName)
                         return line
                       })
                       .join('\n')
                     finalContent = finalContent.replace(
                       /@each\(action in actions\)[\s\S]*?@end/,
+                      replacement
+                    )
+                  }
+                }
+
+                // Mock @each loops for relationships in model/factory
+                if (state.relationships) {
+                  const eachRelMatch = finalContent.match(
+                    /@each\(relationship in relationships\)([\s\S]*?)@end/
+                  )
+                  if (eachRelMatch) {
+                    const loopBody = eachRelMatch[1]
+                    const replacement = state.relationships
+                      .map((rel: any) => {
+                        let line = loopBody.replace(/{{ relationship.line }}/g, rel.line || '')
+                        line = line.replace(
+                          /{{{ relationship.importLine }}}/g,
+                          rel.importLine || ''
+                        )
+                        line = line.replace(/{{{ relationship.line }}}/g, rel.line || '')
+                        return line
+                      })
+                      .join('\n')
+                    finalContent = finalContent.replace(
+                      /@each\(relationship in relationships\)[\s\S]*?@end/,
                       replacement
                     )
                   }
@@ -173,6 +207,12 @@ test.group('Generators', () => {
                     } else if (type === 'view-svelte') {
                       folder = 'inertia/pages'
                       ext = '.svelte'
+                    } else if (type === 'policy') {
+                      folder = 'app/policies'
+                      ext = '_policy.ts'
+                    } else if (type === 'seeder') {
+                      folder = 'database/seeders'
+                      ext = '_seeder.ts'
                     }
                     destination = join(fs.basePath, folder, state.entity.name.toLowerCase() + ext)
 
@@ -188,6 +228,7 @@ test.group('Generators', () => {
                 }
 
                 return {
+                  destination,
                   write: async () => {
                     mkdirSync(dirname(destination), { recursive: true })
                     writeFileSync(destination, finalContent)
@@ -210,20 +251,21 @@ test.group('Generators', () => {
 
   const setupGenerator = (GeneratorClass: any, fs: any, type: string) => {
     const app = mockApp(fs, type)
-    const generator = new GeneratorClass(app, mockLogger)
-    const generatorWithMock = generator as any
-    generatorWithMock.codemods = {
+    const mockCodemods = {
       makeUsingStub: async (root: string, path: string, state: any) => {
         try {
           const stubs = await app.stubs.create()
           const stub = await stubs.build(path, { source: root })
           const prepared = (stub as any).prepare(state)
           await prepared.write()
+          return { destination: (prepared as any).destination }
         } catch (e) {
           // Ignore errors from deep mocks like ClassGenerator if stub doesn't exist in mock context
+          return { destination: '' }
         }
       },
-    }
+    } as any
+    const generator = new GeneratorClass(app, mockLogger, [], mockCodemods)
     return generator
   }
 
@@ -233,7 +275,7 @@ test.group('Generators', () => {
       attributes: { email: 'string' },
     })
     await assert.fileExists('app/models/user.ts')
-    assert.include(await fs.contents('app/models/user.ts'), 'class User extends UserSchema')
+    assert.include(await fs.contents('app/models/user.ts'), 'class User extends BaseModel')
   })
 
   test('generate migration with pivot', async ({ assert, fs }) => {
@@ -315,9 +357,9 @@ test.group('Generators', () => {
   test('generate seeder', async ({ assert, fs }) => {
     const generator = setupGenerator(SeederGenerator, fs, 'seeder')
     await generator.generate('User', {})
-    // The mock system puts it in the root folder based on the filename logic, or we can just check if it executed
-    // Since our mock setup might not handle 'seeder' type perfectly yet, let's just assert execution didn't throw
-    assert.isOk(generator)
+    await assert.fileExists('database/seeders/user_seeder.ts')
+    const content = await fs.contents('database/seeders/user_seeder.ts')
+    assert.include(content, 'UserFactory.createMany(10)')
   })
 
   test('generate policy', async ({ assert, fs }) => {
@@ -325,6 +367,8 @@ test.group('Generators', () => {
     await generator.generate('Post', {
       update: { authorize: 'update, post' },
     })
-    assert.isOk(generator)
+    await assert.fileExists('app/policies/post_policy.ts')
+    const content = await fs.contents('app/policies/post_policy.ts')
+    assert.include(content, 'update(user: User, post: Post): AuthorizerResponse')
   })
 })

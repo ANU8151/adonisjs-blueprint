@@ -8,9 +8,10 @@ export abstract class BaseGenerator {
   constructor(
     protected app: ApplicationService,
     protected logger: any,
-    protected manifest?: string[]
+    protected manifest?: string[],
+    codemods?: Codemods
   ) {
-    this.codemods = new Codemods(this.app, this.logger)
+    this.codemods = codemods || new Codemods(this.app, this.logger)
   }
 
   protected async generateStub(stubPath: string, stubState: any) {
