@@ -47,6 +47,7 @@ settings:
 ## Usage
 
 ### 1. Initialize your project
+
 Run the init command to create a sample `draft.yaml`:
 
 ```sh
@@ -54,6 +55,7 @@ node ace blueprint:init
 ```
 
 ### 2. Define your application
+
 Edit the generated `draft.yaml` file in your project root.
 
 ```yaml
@@ -85,6 +87,7 @@ controllers:
 ```
 
 ### 3. Build your application
+
 Run the build command to generate all files:
 
 ```sh
@@ -92,11 +95,13 @@ node ace blueprint:build
 ```
 
 For a seamless experience, use the **Watch Mode**:
+
 ```sh
 node ace blueprint:build --watch
 ```
 
 Use the **Force** flag to overwrite existing files without confirmation:
+
 ```sh
 node ace blueprint:build --force
 ```
@@ -138,14 +143,14 @@ Blueprint supports several "smart" statements in your controller actions:
 ## Advanced Usage
 
 ### Custom Stubs
+
 You can specify a custom stub for any model or controller:
 
 ```yaml
 models:
   User:
     stub: stubs/my-custom-model.stub
-    attributes:
-      ...
+    attributes: ...
 ```
 
 ## License

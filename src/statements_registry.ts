@@ -1,9 +1,9 @@
 import type { Entity } from './types.js'
-import { EventGenerator } from './generators/event_generator.js'
-import { MailGenerator } from './generators/mail_generator.js'
-import { JobGenerator } from './generators/job_generator.js'
-import { NotificationGenerator } from './generators/notification_generator.js'
-import { ServiceGenerator } from './generators/service_generator.js'
+import { type EventGenerator } from './generators/event_generator.js'
+import { type MailGenerator } from './generators/mail_generator.js'
+import { type JobGenerator } from './generators/job_generator.js'
+import { type NotificationGenerator } from './generators/notification_generator.js'
+import { type ServiceGenerator } from './generators/service_generator.js'
 
 export interface StatementContext {
   actionName: string

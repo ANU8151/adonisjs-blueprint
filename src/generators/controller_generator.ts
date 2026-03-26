@@ -83,7 +83,8 @@ export class ControllerGenerator extends BaseGenerator {
     }
 
     for (const [actionName, actionDef] of Object.entries(normalizedDefinition)) {
-      if (actionName === 'resource' || actionName === 'middleware' || actionName === 'stub') continue
+      if (actionName === 'resource' || actionName === 'middleware' || actionName === 'stub')
+        continue
 
       const contextItems = new Set<string>(['request', 'response'])
       let logicLines: string[] = []
@@ -135,12 +136,10 @@ export class ControllerGenerator extends BaseGenerator {
 
             logicLines.push(...result.logicLines)
             if (result.imports) {
-              if (result.imports.models)
-                result.imports.models.forEach((i) => imports.models.add(i))
+              if (result.imports.models) result.imports.models.forEach((i) => imports.models.add(i))
               if (result.imports.validators)
                 result.imports.validators.forEach((i) => imports.validators.add(i))
-              if (result.imports.events)
-                result.imports.events.forEach((i) => imports.events.add(i))
+              if (result.imports.events) result.imports.events.forEach((i) => imports.events.add(i))
               if (result.imports.policies)
                 result.imports.policies.forEach((i) => imports.policies.add(i))
               if (result.imports.mails) result.imports.mails.forEach((i) => imports.mails.add(i))
@@ -148,9 +147,10 @@ export class ControllerGenerator extends BaseGenerator {
               if (result.imports.notifications)
                 result.imports.notifications.forEach((i) => imports.notifications.add(i))
               if (result.imports.services)
-                result.imports.services.forEach((i) => {
-                  const servicePath = string.snakeCase(i.replace('Service', '')) + '_service'
-                  imports.services.set(i, servicePath)
+                result.imports.services.forEach((serviceName) => {
+                  const servicePath =
+                    string.snakeCase(serviceName.replace('Service', '')) + '_service'
+                  imports.services.set(serviceName, servicePath)
                 })
             }
             if (result.context) {
@@ -181,7 +181,10 @@ export class ControllerGenerator extends BaseGenerator {
           mails: Array.from(imports.mails),
           jobs: Array.from(imports.jobs),
           notifications: Array.from(imports.notifications),
-          services: Array.from(imports.services.entries()).map(([name, path]) => ({ name, path })),
+          services: Array.from(imports.services.entries()).map(([serviceName, path]) => ({
+            name: serviceName,
+            path,
+          })),
         },
       },
       definition.stub

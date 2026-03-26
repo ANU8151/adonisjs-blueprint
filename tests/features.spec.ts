@@ -39,19 +39,19 @@ test.group('Features', () => {
 
     // We'll capture the state passed to generateStub
     let capturedState: any = null
-    
+
     const mockCodemods = {
       makeUsingStub: async (_root: string, _path: string, state: any) => {
         capturedState = state
-        return { 
-            destination: join(fs.basePath, 'output.ts'),
-            stub: {
-                generate: () => ({
-                    to: () => ({
-                        to: () => {}
-                    })
-                })
-            }
+        return {
+          destination: join(fs.basePath, 'output.ts'),
+          stub: {
+            generate: () => ({
+              to: () => ({
+                to: () => {},
+              }),
+            }),
+          },
         }
       },
     } as any
@@ -99,8 +99,8 @@ test.group('Features', () => {
     })
     const state = getCapturedState()
     const action = state.actions.find((a: any) => a.name === 'store')
-    assert.include(action.logic, "Post.create(payload)")
-    assert.include(action.logic, ".sync(payload.tag_ids)")
+    assert.include(action.logic, 'Post.create(payload)')
+    assert.include(action.logic, '.sync(payload.tag_ids)')
   })
 
   test('ControllerGenerator: filtered validation', async ({ assert, fs }) => {
@@ -111,7 +111,7 @@ test.group('Features', () => {
     const state = getCapturedState()
     const action = state.actions.find((a: any) => a.name === 'update')
     assert.include(action.logic, "pick(['email', 'full_name'])")
-    assert.include(action.logic, "meta: { id: params.id }")
+    assert.include(action.logic, 'meta: { id: params.id }')
   })
 
   test('SeederGenerator: dynamic count', async ({ assert, fs }) => {
@@ -144,7 +144,7 @@ test.group('Features', () => {
       middleware: ['auth'],
     })
     const content = await fs.contents('start/routes.ts')
-    assert.include(content, "router.group(() => {")
+    assert.include(content, 'router.group(() => {')
     assert.include(content, ".prefix('admin')")
     assert.include(content, ".use('*', [middleware.auth()])")
   })

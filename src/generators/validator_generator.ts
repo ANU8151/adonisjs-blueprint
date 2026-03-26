@@ -58,8 +58,7 @@ export class ValidatorGenerator extends BaseGenerator {
                 return !await query.first() 
               })`
             }
-          }
- else if (modifier === 'min' && parts[i + 1]) {
+          } else if (modifier === 'min' && parts[i + 1]) {
             vineChain +=
               baseType === 'number' ? `.min(${parts[i + 1]})` : `.minLength(${parts[i + 1]})`
             i++
@@ -79,7 +78,10 @@ export class ValidatorGenerator extends BaseGenerator {
         attributes.push({ name: attrName, vineType: vineChain.replace('vine.', '') })
 
         if (parts.includes('confirmed')) {
-          attributes.push({ name: `${attrName}_confirmation`, vineType: vineChain.replace('vine.', '').replace('.confirmed()', '') })
+          attributes.push({
+            name: `${attrName}_confirmation`,
+            vineType: vineChain.replace('vine.', '').replace('.confirmed()', ''),
+          })
         }
       }
     }

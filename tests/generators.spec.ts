@@ -49,61 +49,72 @@ test.group('Generators', () => {
               },
               prepare: (state: any) => {
                 const getVal = (path: string, obj: any) => {
-                    const parts = path.split('.')
-                    let val = obj
-                    for(const p of parts) { 
-                        if(val === undefined || val === null) return undefined
-                        val = val[p] 
-                    }
-                    return val
+                  const parts = path.split('.')
+                  let val = obj
+                  for (const p of parts) {
+                    if (val === undefined || val === null) return undefined
+                    val = val[p]
+                  }
+                  return val
                 }
 
                 const inspect = (val: any) => JSON.stringify(val)
 
                 const processLogic = (text: string, currentState: any): string => {
-                    let processed = text
+                  let processed = text
 
-                    // Handle @if
-                    processed = processed.replace(/@if\((.*?)\)([\s\S]*?)@else([\s\S]*?)@end/g, (match, condition, body, elseBody) => {
-                        const val = getVal(condition, currentState)
-                        return val ? body : elseBody
-                    })
-                    processed = processed.replace(/@if\((.*?)\)([\s\S]*?)@end/g, (match, condition, body) => {
-                        const val = getVal(condition, currentState)
-                        return val ? body : ''
-                    })
+                  // Handle @if
+                  processed = processed.replace(
+                    /@if\((.*?)\)([\s\S]*?)@else([\s\S]*?)@end/g,
+                    (match, condition, body, elseBody) => {
+                      const val = getVal(condition, currentState)
+                      return val ? body : elseBody
+                    }
+                  )
+                  processed = processed.replace(
+                    /@if\((.*?)\)([\s\S]*?)@end/g,
+                    (match, condition, body) => {
+                      const val = getVal(condition, currentState)
+                      return val ? body : ''
+                    }
+                  )
 
-                    // Handle remaining {{ }} placeholders
-                    processed = processed.replace(/{{ (.*?) }}/g, (match, path) => {
-                        if (path.startsWith('inspect(')) {
-                            const valPath = path.match(/inspect\((.*?)\)/)![1]
-                            const val = getVal(valPath, currentState)
-                            return inspect(val)
-                        }
-                        const val = getVal(path, currentState)
-                        if (val !== undefined && val !== null) {
-                            if (typeof val === 'object' && !Array.isArray(val)) {
-                                return match 
-                            }
-                            return String(val)
-                        }
+                  // Handle remaining {{ }} placeholders
+                  processed = processed.replace(/{{ (.*?) }}/g, (match, path) => {
+                    if (path.startsWith('inspect(')) {
+                      const valPath = path.match(/inspect\((.*?)\)/)![1]
+                      const val = getVal(valPath, currentState)
+                      return inspect(val)
+                    }
+                    const val = getVal(path, currentState)
+                    if (val !== undefined && val !== null) {
+                      if (typeof val === 'object' && !Array.isArray(val)) {
                         return match
-                    })
+                      }
+                      return String(val)
+                    }
+                    return match
+                  })
 
-                    return processed
+                  return processed
                 }
 
                 const processEach = (text: string, currentState: any): string => {
-                    return text.replace(/@each\((.*?) in (.*?)\)([\s\S]*?)@end/g, (match, item, list, body) => {
-                        const val = getVal(list, currentState)
-                        if (Array.isArray(val)) {
-                            return val.map(v => {
-                                const localState = { ...currentState, [item]: v }
-                                return processLogic(body, localState)
-                            }).join('\n')
-                        }
-                        return ''
-                    })
+                  return text.replace(
+                    /@each\((.*?) in (.*?)\)([\s\S]*?)@end/g,
+                    (match, item, list, body) => {
+                      const val = getVal(list, currentState)
+                      if (Array.isArray(val)) {
+                        return val
+                          .map((v) => {
+                            const localState = { ...currentState, [item]: v }
+                            return processLogic(body, localState)
+                          })
+                          .join('\n')
+                      }
+                      return ''
+                    }
+                  )
                 }
 
                 let finalContent = processEach(content, state)
@@ -207,13 +218,13 @@ test.group('Generators', () => {
           const stub = await stubs.build(path, { source: root })
           const prepared = (stub as any).prepare(state)
           await prepared.write()
-          return { 
+          return {
             destination: (prepared as any).destination,
             stub: {
-                generate: () => ({
-                    to: () => {}
-                })
-            }
+              generate: () => ({
+                to: () => {},
+              }),
+            },
           }
         } catch (e) {
           // Ignore errors from deep mocks like ClassGenerator if stub doesn't exist in mock context

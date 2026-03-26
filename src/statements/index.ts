@@ -9,7 +9,10 @@ statementsRegistry.register('query', (value, { entity, pluralName, singularName 
 
   for (const part of parts.slice(1)) {
     if (part.startsWith('with:')) {
-      const relations = part.replace('with:', '').split(',').map((r) => r.trim())
+      const relations = part
+        .replace('with:', '')
+        .split(',')
+        .map((r) => r.trim())
       preloads.push(...relations)
     } else {
       preloads.push(part)
@@ -37,7 +40,9 @@ statementsRegistry.register('query', (value, { entity, pluralName, singularName 
       `const ${variableName} = await ${queryChain}.paginate(request.input('page', 1), ${limit})`
     )
   } else if (queryType === 'find') {
-    logicLines.push(`const ${variableName} = await ${queryChain}.where('id', params.id).firstOrFail()`)
+    logicLines.push(
+      `const ${variableName} = await ${queryChain}.where('id', params.id).firstOrFail()`
+    )
     context.push('params')
   }
 
@@ -77,7 +82,9 @@ statementsRegistry.register('validate', (value, { actionName, entity }) => {
   if (typeof value === 'string' && value !== 'all') {
     const fields = value.split(',').map((f) => f.trim())
     return {
-      logicLines: [`const payload = await request.validateUsing(${validatorName}.pick(['${fields.join("', '")}'])${meta})`],
+      logicLines: [
+        `const payload = await request.validateUsing(${validatorName}.pick(['${fields.join("', '")}'])${meta})`,
+      ],
       imports: { validators: [validatorName] },
       context: actionName === 'update' ? ['params'] : [],
     }
@@ -98,7 +105,10 @@ statementsRegistry.register('save', (value, { entity }) => {
 
   for (const part of parts.slice(1)) {
     if (part.startsWith('with:')) {
-      const relations = part.replace('with:', '').split(',').map((r) => r.trim())
+      const relations = part
+        .replace('with:', '')
+        .split(',')
+        .map((r) => r.trim())
       relationships.push(...relations)
     } else {
       relationships.push(part)

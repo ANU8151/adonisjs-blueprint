@@ -19,7 +19,10 @@ export class RouteGenerator extends BaseGenerator {
 
     const resourceName = entity.name.toLowerCase() + 's'
     const fullResourcePath = [...parents, resourceName].join('.') // posts.comments
-    const controllerPath = [...nameParts.map((p) => p.toLowerCase()), entity.name.toLowerCase()].join('/')
+    const controllerPath = [
+      ...nameParts.map((p) => p.toLowerCase()),
+      entity.name.toLowerCase(),
+    ].join('/')
 
     let content = readFileSync(routesPath, 'utf8')
 

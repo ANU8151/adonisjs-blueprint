@@ -36,7 +36,8 @@ export class OpenAPIGenerator extends BaseGenerator {
 
         if (modelDef.attributes) {
           for (const [attrName, attrType] of Object.entries(modelDef.attributes)) {
-            const typeStr = typeof attrType === 'string' ? attrType : (attrType as any).type || 'string'
+            const typeStr =
+              typeof attrType === 'string' ? attrType : (attrType as any).type || 'string'
             schema.properties[attrName] = {
               type: this.mapToOpenAPIType(typeStr),
             }
@@ -53,7 +54,8 @@ export class OpenAPIGenerator extends BaseGenerator {
       const normalizedDefinition = this.normalizeDefinition(controllerDef, blueprint.settings?.api)
 
       for (const [actionName, actionDef] of Object.entries(normalizedDefinition)) {
-        if (actionName === 'resource' || actionName === 'middleware' || actionName === 'stub') continue
+        if (actionName === 'resource' || actionName === 'middleware' || actionName === 'stub')
+          continue
 
         const { path, method } = this.inferRoute(resourceName, actionName)
         if (!path || !method) continue
@@ -147,6 +149,11 @@ export class OpenAPIGenerator extends BaseGenerator {
       destroy: { path: `/${resourceName}/{id}`, method: 'delete' },
     }
 
-    return routes[actionName] || { path: `/${resourceName}/${string.snakeCase(actionName)}`, method: 'get' }
+    return (
+      routes[actionName] || {
+        path: `/${resourceName}/${string.snakeCase(actionName)}`,
+        method: 'get',
+      }
+    )
   }
 }
