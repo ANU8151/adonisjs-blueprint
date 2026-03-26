@@ -1,24 +1,45 @@
 import { BaseGenerator } from './base_generator.js'
+import string from '@adonisjs/core/helpers/string'
+
 export class FactoryGenerator extends BaseGenerator {
   async generate(name: string, definition: any) {
     const entity = this.app.generators.createEntity(name)
     const attributes: any[] = []
     const relationships: any[] = []
+    const factoryImports: Set<string> = new Set()
 
     if (definition.attributes) {
       for (const [attrName, attrType] of Object.entries(definition.attributes)) {
         let fakerMethod = 'lorem.word'
-        const type = typeof attrType === 'string' ? attrType : (attrType as any).type
+        const typeStr = typeof attrType === 'string' ? attrType : (attrType as any).type || 'string'
 
-        if (attrName === 'email') {
+        if (typeStr.includes('faker:')) {
+          fakerMethod = typeStr.split('faker:')[1].split(':')[0]
+        } else if (attrName.includes('first_name')) {
+          fakerMethod = 'person.firstName'
+        } else if (attrName.includes('last_name')) {
+          fakerMethod = 'person.lastName'
+        } else if (attrName.includes('full_name') || attrName === 'name') {
+          fakerMethod = 'person.fullName'
+        } else if (attrName === 'email') {
           fakerMethod = 'internet.email'
-        } else if (type === 'string' || type === 'text') {
+        } else if (attrName.includes('password')) {
+          fakerMethod = 'internet.password'
+        } else if (attrName.includes('phone')) {
+          fakerMethod = 'phone.number'
+        } else if (attrName.includes('city')) {
+          fakerMethod = 'location.city'
+        } else if (attrName.includes('country')) {
+          fakerMethod = 'location.country'
+        } else if (attrName.includes('address')) {
+          fakerMethod = 'location.streetAddress'
+        } else if (typeStr.startsWith('string') || typeStr.startsWith('text')) {
           fakerMethod = 'lorem.sentence'
-        } else if (type === 'integer' || type === 'number') {
+        } else if (typeStr.startsWith('integer') || typeStr.startsWith('number')) {
           fakerMethod = 'number.int'
-        } else if (type === 'boolean') {
+        } else if (typeStr.startsWith('boolean')) {
           fakerMethod = 'datatype.boolean'
-        } else if (type === 'timestamp' || type === 'datetime') {
+        } else if (typeStr.startsWith('timestamp') || typeStr.startsWith('datetime')) {
           fakerMethod = 'date.recent'
         }
 
@@ -31,11 +52,15 @@ export class FactoryGenerator extends BaseGenerator {
         string,
         string,
       ][]) {
+        const relatedModel = string.pascalCase(string.singular(relName))
         relationships.push({
           name: relName,
           type: relType,
-          model: relName.charAt(0).toUpperCase() + relName.slice(1).replace(/s$/, ''),
+          model: relatedModel,
         })
+        if (relType === 'hasMany' || relType === 'belongsToMany') {
+          factoryImports.add(`${relatedModel}Factory`)
+        }
       }
     }
 
@@ -43,6 +68,7 @@ export class FactoryGenerator extends BaseGenerator {
       entity,
       attributes,
       relationships,
+      factoryImports: Array.from(factoryImports),
     })
   }
 }

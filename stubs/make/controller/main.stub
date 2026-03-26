@@ -24,6 +24,11 @@ import {{ event }} from '#events/{{ event.toLowerCase() }}'
 import {{ policy }} from '#policies/{{ entity.name.toLowerCase() }}_policy'
 @end
 @end
+@if(imports.services)
+@each(service in imports.services)
+import {{ service.name }} from '#services/{{ service.path }}'
+@end
+@end
 
 export default class {{ entity.className }}Controller {
   @if(middleware.length)

@@ -4,10 +4,18 @@
   })
 }}}
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
+@if(data)
+import {{ entity.className }} from '#models/{{ entity.name.toLowerCase() }}'
+@else
 import { {{ entity.className }}Factory } from '#database/factories/{{ entity.name.toLowerCase() }}_factory'
+@end
 
 export default class extends BaseSeeder {
   async run() {
-    await {{ entity.className }}Factory.createMany(10)
+    @if(data)
+    await {{ entity.className }}.createMany({{ inspect(data) }})
+    @else
+    await {{ entity.className }}Factory.createMany({{ count }})
+    @end
   }
 }

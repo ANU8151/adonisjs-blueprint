@@ -55,6 +55,14 @@ export class ModelGenerator extends BaseGenerator {
       ][]) {
         const relatedModelName = string.pascalCase(string.singular(relName))
 
+        let relationshipLine = `@${relType}(() => ${relatedModelName})\ndeclare ${relName}: ${relType.charAt(0).toUpperCase() + relType.slice(1)}<typeof ${relatedModelName}>`
+
+        if (relType === 'belongsToMany') {
+          const models = [entity.className, relatedModelName].sort()
+          const pivotTable = models.map((m) => string.snakeCase(m)).join('_')
+          relationshipLine = `@${relType}(() => ${relatedModelName}, { pivotTable: '${pivotTable}' })\ndeclare ${relName}: ${relType.charAt(0).toUpperCase() + relType.slice(1)}<typeof ${relatedModelName}>`
+        }
+
         // Add foreign key column for belongsTo
         if (relType === 'belongsTo') {
           const foreignKey = `${string.camelCase(relName)}Id`
@@ -68,7 +76,7 @@ export class ModelGenerator extends BaseGenerator {
 
         relationships.push({
           importLine: `import { ${relType} } from '@adonisjs/lucid/orm'\nimport type { ${relType.charAt(0).toUpperCase() + relType.slice(1)} } from '@adonisjs/lucid/types'\nimport ${relatedModelName} from '#models/${string.snakeCase(relatedModelName)}'`,
-          line: `@${relType}(() => ${relatedModelName})\ndeclare ${relName}: ${relType.charAt(0).toUpperCase() + relType.slice(1)}<typeof ${relatedModelName}>`,
+          line: relationshipLine,
         })
       }
     }

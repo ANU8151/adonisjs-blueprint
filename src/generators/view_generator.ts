@@ -3,7 +3,8 @@ export class ViewGenerator extends BaseGenerator {
   async generate(
     name: string,
     useInertia: boolean = false,
-    adapter: 'react' | 'vue' | 'svelte' = 'react'
+    adapter: 'react' | 'vue' | 'svelte' = 'react',
+    definition?: any
   ) {
     const entity = this.app.generators.createEntity(name)
     let stubPath = 'make/view/edge.stub'
@@ -12,8 +13,19 @@ export class ViewGenerator extends BaseGenerator {
       stubPath = `make/view/${adapter}.stub`
     }
 
+    const attributes = definition?.attributes
+      ? Object.entries(definition.attributes).map(([attrName, attrType]) => ({
+          name: attrName,
+          type: typeof attrType === 'string' ? attrType : (attrType as any).type,
+        }))
+      : []
+
+    const action = name.split('/').pop() || 'show'
+
     await this.generateStub(stubPath, {
       entity,
+      attributes,
+      action,
     })
   }
 }

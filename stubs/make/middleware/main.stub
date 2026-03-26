@@ -1,0 +1,16 @@
+{{{
+  exports({
+    to: app.makePath('app/middleware', entity.path, entity.name.toLowerCase() + '_middleware.ts')
+  })
+}}}
+import { HttpContext } from '@adonisjs/core/http'
+import { NextFn } from '@adonisjs/core/types/http'
+
+export default class {{ entity.className }}Middleware {
+  async handle(ctx: HttpContext, next: NextFn) {
+    /**
+     * Middleware logic goes here
+     */
+    return next()
+  }
+}

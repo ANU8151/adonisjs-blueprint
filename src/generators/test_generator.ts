@@ -1,9 +1,9 @@
 import { BaseGenerator } from './base_generator.js'
-import type { Entity } from '../types.js'
+import type { Entity, BlueprintSchema } from '../types.js'
 import string from '@adonisjs/core/helpers/string'
 
 export class TestGenerator extends BaseGenerator {
-  async generate(name: string, definition: any) {
+  async generate(name: string, definition: any, blueprint: BlueprintSchema) {
     const entity = this.app.generators.createEntity(name) as Entity
     const actions: any[] = []
     const pluralName = string.plural(string.snakeCase(entity.name))
@@ -13,6 +13,7 @@ export class TestGenerator extends BaseGenerator {
 
       let method = 'get'
       let url = `/${pluralName}`
+      const typedDef = actionDef as any
 
       if (actionName === 'store') {
         method = 'post'
@@ -32,12 +33,14 @@ export class TestGenerator extends BaseGenerator {
         name: actionName,
         method,
         url,
+        auth: !!typedDef.auth,
       })
     }
 
     await this.generateStub('make/test/controller.stub', {
       entity,
       actions,
+      hasAuth: actions.some((a) => a.auth) || !!blueprint.auth,
     })
   }
 }

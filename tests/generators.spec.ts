@@ -6,6 +6,15 @@ import { FactoryGenerator } from '../src/generators/factory_generator.js'
 import { ViewGenerator } from '../src/generators/view_generator.js'
 import { PolicyGenerator } from '../src/generators/policy_generator.js'
 import { SeederGenerator } from '../src/generators/seeder_generator.js'
+import { ValidatorGenerator } from '../src/generators/validator_generator.js'
+import { EventGenerator } from '../src/generators/event_generator.js'
+import { MailGenerator } from '../src/generators/mail_generator.js'
+import { JobGenerator } from '../src/generators/job_generator.js'
+import { RouteGenerator } from '../src/generators/route_generator.js'
+import { MiddlewareGenerator } from '../src/generators/middleware_generator.js'
+import { TestGenerator } from '../src/generators/test_generator.js'
+import { ServiceGenerator } from '../src/generators/service_generator.js'
+import { EnumGenerator } from '../src/generators/enum_generator.js'
 import { join, dirname } from 'node:path'
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 
@@ -39,135 +48,66 @@ test.group('Generators', () => {
                 content = newContent
               },
               prepare: (state: any) => {
-                let finalContent = content.replace(
-                  /{{ entity.className }}/g,
-                  state.entity.className
-                )
-                finalContent = finalContent.replace(/{{ entity.name }}/g, state.entity.name)
-                finalContent = finalContent.replace(
-                  /{{ entity.tableName }}/g,
-                  state.entity.tableName
-                )
-
-                if (state.modelImports) {
-                  finalContent = finalContent.replace('{{{ modelImports }}}', state.modelImports)
-                }
-                if (state.modelSignature) {
-                  finalContent = finalContent.replace(
-                    '{{{ modelSignature }}}',
-                    state.modelSignature
-                  )
-                }
-
-                // Mock @if blocks
-                finalContent = finalContent.replace(
-                  /@if\(imports\.(models|validators|events|policies)\)[\s\S]*?@end\n/g,
-                  (match) => {
-                    const importType = match.match(
-                      /imports\.(models|validators|events|policies)/
-                    )![1]
-                    if (
-                      state.imports &&
-                      state.imports[importType] &&
-                      state.imports[importType].length > 0
-                    ) {
-                      return match.replace(/@if\(imports\..*?\)\n/, '').replace(/@end\n/, '')
+                const getVal = (path: string, obj: any) => {
+                    const parts = path.split('.')
+                    let val = obj
+                    for(const p of parts) { 
+                        if(val === undefined || val === null) return undefined
+                        val = val[p] 
                     }
-                    return ''
-                  }
-                )
-
-                // Mock @each loops for imports
-                finalContent = finalContent.replace(
-                  /@each\((model|validator|event|policy) in imports\.(models|validators|events|policies)\)([\s\S]*?)@end/g,
-                  (_match, item, list, body) => {
-                    if (state.imports && state.imports[list]) {
-                      return state.imports[list]
-                        .map((val: string) => body.replace(new RegExp(`{{ ${item} }}`, 'g'), val))
-                        .join('')
-                    }
-                    return ''
-                  }
-                )
-
-                // Mock @each loops for attributes
-                if (state.attributes) {
-                  const eachAttrMatch = finalContent.match(
-                    /@each\(attribute in attributes\)([\s\S]*?)@end/
-                  )
-                  if (eachAttrMatch) {
-                    const loopBody = eachAttrMatch[1]
-                    const replacement = state.attributes
-                      .map((attr: any) => {
-                        let line = loopBody.replace(/{{ attribute.name }}/g, attr.name || '')
-                        line = line.replace(/{{ attribute.vineType }}/g, attr.vineType || '')
-                        line = line.replace(/{{ attribute.fakerMethod }}/g, attr.fakerMethod || '')
-                        line = line.replace(
-                          /{{ attribute.migrationLine }}/g,
-                          attr.migrationLine || ''
-                        )
-                        // Handle {{{ attribute.line }}}
-                        line = line.replace(/{{{ attribute.line }}}/g, attr.line || '')
-                        return line
-                      })
-                      .join('\n')
-                    finalContent = finalContent.replace(
-                      /@each\(attribute in attributes\)[\s\S]*?@end/,
-                      replacement
-                    )
-                  }
+                    return val
                 }
 
-                // Mock @each loops for actions
-                if (state.actions) {
-                  const eachActionMatch = finalContent.match(
-                    /@each\(action in actions\)([\s\S]*?)@end/
-                  )
-                  if (eachActionMatch) {
-                    const loopBody = eachActionMatch[1]
-                    const replacement = state.actions
-                      .map((action: any) => {
-                        let line = loopBody.replace(/{{ action.name }}/g, action.name)
-                        line = line.replace(/{{ action.context }}/g, action.context)
-                        line = line.replace(/{{ action.logic }}/g, action.logic)
-                        line = line.replace(/{{ action.method }}/g, action.method)
-                        line = line.replace(/{{ action.url }}/g, action.url)
-                        line = line.replace(/{{ action.variableName }}/g, action.variableName)
-                        line = line.replace(/{{ action.modelName }}/g, action.modelName)
-                        return line
-                      })
-                      .join('\n')
-                    finalContent = finalContent.replace(
-                      /@each\(action in actions\)[\s\S]*?@end/,
-                      replacement
-                    )
-                  }
+                const inspect = (val: any) => JSON.stringify(val)
+
+                const processLogic = (text: string, currentState: any): string => {
+                    let processed = text
+
+                    // Handle @if
+                    processed = processed.replace(/@if\((.*?)\)([\s\S]*?)@else([\s\S]*?)@end/g, (match, condition, body, elseBody) => {
+                        const val = getVal(condition, currentState)
+                        return val ? body : elseBody
+                    })
+                    processed = processed.replace(/@if\((.*?)\)([\s\S]*?)@end/g, (match, condition, body) => {
+                        const val = getVal(condition, currentState)
+                        return val ? body : ''
+                    })
+
+                    // Handle remaining {{ }} placeholders
+                    processed = processed.replace(/{{ (.*?) }}/g, (match, path) => {
+                        if (path.startsWith('inspect(')) {
+                            const valPath = path.match(/inspect\((.*?)\)/)![1]
+                            const val = getVal(valPath, currentState)
+                            return inspect(val)
+                        }
+                        const val = getVal(path, currentState)
+                        if (val !== undefined && val !== null) {
+                            if (typeof val === 'object' && !Array.isArray(val)) {
+                                return match 
+                            }
+                            return String(val)
+                        }
+                        return match
+                    })
+
+                    return processed
                 }
 
-                // Mock @each loops for relationships in model/factory
-                if (state.relationships) {
-                  const eachRelMatch = finalContent.match(
-                    /@each\(relationship in relationships\)([\s\S]*?)@end/
-                  )
-                  if (eachRelMatch) {
-                    const loopBody = eachRelMatch[1]
-                    const replacement = state.relationships
-                      .map((rel: any) => {
-                        let line = loopBody.replace(/{{ relationship.line }}/g, rel.line || '')
-                        line = line.replace(
-                          /{{{ relationship.importLine }}}/g,
-                          rel.importLine || ''
-                        )
-                        line = line.replace(/{{{ relationship.line }}}/g, rel.line || '')
-                        return line
-                      })
-                      .join('\n')
-                    finalContent = finalContent.replace(
-                      /@each\(relationship in relationships\)[\s\S]*?@end/,
-                      replacement
-                    )
-                  }
+                const processEach = (text: string, currentState: any): string => {
+                    return text.replace(/@each\((.*?) in (.*?)\)([\s\S]*?)@end/g, (match, item, list, body) => {
+                        const val = getVal(list, currentState)
+                        if (Array.isArray(val)) {
+                            return val.map(v => {
+                                const localState = { ...currentState, [item]: v }
+                                return processLogic(body, localState)
+                            }).join('\n')
+                        }
+                        return ''
+                    })
                 }
+
+                let finalContent = processEach(content, state)
+                finalContent = processLogic(finalContent, state)
 
                 const exportsMatch = finalContent.match(/{{{([\s\S]*?)}}}/)
                 let destination = ''
@@ -183,6 +123,7 @@ test.group('Generators', () => {
                       ext = '_controller.ts'
                     } else if (type === 'validator') {
                       folder = 'app/validators'
+                      ext = '.ts'
                     } else if (type === 'factory') {
                       folder = 'database/factories'
                       ext = '_factory.ts'
@@ -195,6 +136,14 @@ test.group('Generators', () => {
                       folder = 'app/mails'
                     } else if (type === 'job') {
                       folder = 'app/jobs'
+                    } else if (type === 'middleware') {
+                      folder = 'app/middleware'
+                      ext = '_middleware.ts'
+                    } else if (type === 'service') {
+                      folder = 'app/services'
+                      ext = '_service.ts'
+                    } else if (type === 'enum') {
+                      folder = 'app/enums'
                     } else if (type === 'view') {
                       folder = 'resources/views'
                       ext = '.edge'
@@ -258,7 +207,14 @@ test.group('Generators', () => {
           const stub = await stubs.build(path, { source: root })
           const prepared = (stub as any).prepare(state)
           await prepared.write()
-          return { destination: (prepared as any).destination }
+          return { 
+            destination: (prepared as any).destination,
+            stub: {
+                generate: () => ({
+                    to: () => {}
+                })
+            }
+          }
         } catch (e) {
           // Ignore errors from deep mocks like ClassGenerator if stub doesn't exist in mock context
           return { destination: '' }
@@ -370,5 +326,83 @@ test.group('Generators', () => {
     await assert.fileExists('app/policies/post_policy.ts')
     const content = await fs.contents('app/policies/post_policy.ts')
     assert.include(content, 'update(user: User, post: Post): AuthorizerResponse')
+  })
+
+  test('generate validator', async ({ assert, fs }) => {
+    const generator = setupGenerator(ValidatorGenerator, fs, 'validator')
+    await generator.generate('User', {
+      attributes: { email: 'email:unique', password: 'string:min:8' },
+    })
+    await assert.fileExists('app/validators/user.ts')
+    const content = await fs.contents('app/validators/user.ts')
+    assert.include(content, 'vine.string().email().unique')
+    assert.include(content, 'vine.string().minLength(8)')
+  })
+
+  test('generate event', async ({ assert, fs }) => {
+    const generator = setupGenerator(EventGenerator, fs, 'event')
+    await generator.generate('UserRegistered', {})
+    await assert.fileExists('app/events/userregistered.ts')
+  })
+
+  test('generate mail', async ({ assert, fs }) => {
+    const generator = setupGenerator(MailGenerator, fs, 'mail')
+    await generator.generate('WelcomeEmail', {})
+    await assert.fileExists('app/mails/welcomeemail.ts')
+  })
+
+  test('generate job', async ({ assert, fs }) => {
+    const generator = setupGenerator(JobGenerator, fs, 'job')
+    await generator.generate('ProcessVideo', {})
+    await assert.fileExists('app/jobs/processvideo.ts')
+  })
+
+  test('generate enum', async ({ assert, fs }) => {
+    const generator = setupGenerator(EnumGenerator, fs, 'enum')
+    await generator.generate('UserRole', { values: ['admin', 'user'] })
+    await assert.fileExists('app/enums/userrole.ts')
+    const content = await fs.contents('app/enums/userrole.ts')
+    assert.include(content, "ADMIN = 'admin'")
+    assert.include(content, "USER = 'user'")
+  })
+
+  test('generate middleware', async ({ assert, fs }) => {
+    const generator = setupGenerator(MiddlewareGenerator, fs, 'middleware')
+    await generator.generate('AdminOnly', {})
+    await assert.fileExists('app/middleware/adminonly_middleware.ts')
+  })
+
+  test('generate service', async ({ assert, fs }) => {
+    const generator = setupGenerator(ServiceGenerator, fs, 'service')
+    await generator.generate('PaymentService')
+    await assert.fileExists('app/services/paymentservice_service.ts')
+  })
+
+  test('generate route', async ({ assert, fs }) => {
+    const generator = setupGenerator(RouteGenerator, fs, 'route')
+    await generator.generate('Post', { middleware: ['auth'] }, true)
+
+    const content = await fs.contents('start/routes.ts')
+    assert.include(
+      content,
+      "router.resource('posts', '#controllers/post_controller').apiOnly().use('*', [middleware.auth()])"
+    )
+  })
+
+  test('generate functional test', async ({ assert, fs }) => {
+    const generator = setupGenerator(TestGenerator, fs, 'test')
+    await generator.generate(
+      'Post',
+      {
+        index: {},
+        store: { auth: true },
+      },
+      { auth: true } as any
+    )
+
+    await assert.fileExists('tests/functional/post.spec.ts')
+    const content = await fs.contents('tests/functional/post.spec.ts')
+    assert.include(content, "test.group('Post Controller'")
+    assert.include(content, 'loginAs(user)')
   })
 })

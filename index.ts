@@ -9,6 +9,7 @@
 
 export { configure } from './configure.js'
 export { stubsRoot } from './stubs/main.js'
+export { statementsRegistry } from './src/statements_registry.js'
 
 export interface BlueprintConfig {
   viewer?: 'edge' | 'inertia'

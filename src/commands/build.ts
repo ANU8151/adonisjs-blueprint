@@ -13,6 +13,7 @@ import { SeederGenerator } from '../generators/seeder_generator.js'
 import { PolicyGenerator } from '../generators/policy_generator.js'
 import { EnumGenerator } from '../generators/enum_generator.js'
 import { MiddlewareGenerator } from '../generators/middleware_generator.js'
+import { OpenAPIGenerator } from '../generators/openapi_generator.js'
 import string from '@adonisjs/core/helpers/string'
 
 export class BuildBlueprint extends BaseCommand {
@@ -225,9 +226,9 @@ export class BuildBlueprint extends BaseCommand {
 
       for (const [name, definition] of Object.entries(blueprint.controllers)) {
         this.logger.info(`Generating controller, routes, tests and policies for ${name}`)
-        await controllerGenerator.generate(name, definition, useInertia, isApi)
+        await controllerGenerator.generate(name, definition, useInertia, isApi, blueprint.models)
         await routeGenerator.generate(name, definition, isApi)
-        await testGenerator.generate(name, definition)
+        await testGenerator.generate(name, definition, blueprint)
         await policyGenerator.generate(name, definition)
 
         // Generate custom middleware if specified
@@ -247,11 +248,19 @@ export class BuildBlueprint extends BaseCommand {
             if (typeof actionDef === 'object' && actionDef !== null && (actionDef as any).render) {
               const viewPath = (actionDef as any).render
               this.logger.info(`Generating view ${viewPath} (${useInertia ? adapter : 'edge'})`)
-              await viewGenerator.generate(viewPath, useInertia, adapter)
+              const modelName = string.pascalCase(string.singular(name))
+              const modelDef = blueprint.models ? blueprint.models[modelName] : null
+              await viewGenerator.generate(viewPath, useInertia, adapter, modelDef)
             }
           }
         }
       }
+    }
+
+    if (blueprint.settings?.api) {
+      this.logger.info('Generating API documentation...')
+      const openapiGenerator = new OpenAPIGenerator(this.app, this.logger, this.manifest)
+      await openapiGenerator.generate(blueprint)
     }
 
     // Save manifest

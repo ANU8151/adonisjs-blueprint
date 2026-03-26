@@ -5,23 +5,31 @@ import { EventGenerator } from './event_generator.js'
 import { MailGenerator } from './mail_generator.js'
 import { JobGenerator } from './job_generator.js'
 import { NotificationGenerator } from './notification_generator.js'
+import { ServiceGenerator } from './service_generator.js'
 import string from '@adonisjs/core/helpers/string'
+import { statementsRegistry } from '../statements_registry.js'
+import '../statements/index.js'
 
 export class ControllerGenerator extends BaseGenerator {
   async generate(
     name: string,
     definition: any,
     useInertia: boolean = false,
-    isApi: boolean = false
+    isApi: boolean = false,
+    models?: any
   ) {
-    const nameParts = name.split('.')
-    const baseName = nameParts.pop()! // Handle nested names like Post.Comment
+    const nameParts = name.split(/[\/.]/)
+    const baseName = nameParts.pop()! // Handle nested names like Post.Comment or Admin/Post
     const entity = this.app.generators.createEntity(baseName) as Entity
+    if (nameParts.length > 0) {
+      entity.path = nameParts.map((p) => string.snakeCase(p)).join('/')
+    }
 
     const eventGenerator = new EventGenerator(this.app, this.logger, this.manifest)
     const mailGenerator = new MailGenerator(this.app, this.logger, this.manifest)
     const jobGenerator = new JobGenerator(this.app, this.logger, this.manifest)
     const notificationGenerator = new NotificationGenerator(this.app, this.logger, this.manifest)
+    const serviceGenerator = new ServiceGenerator(this.app, this.logger, this.manifest)
 
     const actions: any[] = []
     const imports = {
@@ -29,6 +37,10 @@ export class ControllerGenerator extends BaseGenerator {
       validators: new Set<string>(),
       events: new Set<string>(),
       policies: new Set<string>(),
+      mails: new Set<string>(),
+      jobs: new Set<string>(),
+      notifications: new Set<string>(),
+      services: new Map<string, string>(),
     }
 
     const middleware = definition.middleware || []
@@ -62,146 +74,95 @@ export class ControllerGenerator extends BaseGenerator {
           }
     }
 
+    const generators = {
+      event: eventGenerator,
+      mail: mailGenerator,
+      job: jobGenerator,
+      notification: notificationGenerator,
+      service: serviceGenerator,
+    }
+
     for (const [actionName, actionDef] of Object.entries(normalizedDefinition)) {
-      let context = 'request, response'
+      if (actionName === 'resource' || actionName === 'middleware' || actionName === 'stub') continue
+
+      const contextItems = new Set<string>(['request', 'response'])
       let logicLines: string[] = []
 
       if (typeof actionDef === 'object' && actionDef !== null) {
         const typedDef = actionDef as any
 
-        if (typedDef.query) {
-          const queryParts = typedDef.query.split(':')
-          const queryType = queryParts[0]
-          const variableName =
-            queryType === 'all' || queryType === 'paginate' ? pluralName : singularName
+        // Sort keys to maintain some order (e.g., query before render)
+        // This is a bit arbitrary, but we want some consistency
+        const order = [
+          'auth',
+          'authorize',
+          'validate',
+          'query',
+          'save',
+          'delete',
+          'fire',
+          'send',
+          'dispatch',
+          'notify',
+          'upload',
+          'flash',
+          'render',
+          'redirect',
+        ]
+        const keys = Object.keys(typedDef).sort((a, b) => {
+          const idxA = order.indexOf(a)
+          const idxB = order.indexOf(b)
+          if (idxA === -1 && idxB === -1) return 0
+          if (idxA === -1) return 1
+          if (idxB === -1) return -1
+          return idxA - idxB
+        })
 
-          if (queryType === 'all') {
-            logicLines.push(`const ${variableName} = await ${entity.className}.all()`)
-          } else if (queryType === 'paginate') {
-            const limit = queryParts[1] || '20'
-            logicLines.push(
-              `const ${variableName} = await ${entity.className}.query().paginate(request.input('page', 1), ${limit})`
-            )
-          } else if (queryType === 'find') {
-            logicLines.push(
-              `const ${variableName} = await ${entity.className}.findOrFail(params.id)`
-            )
-            if (!context.includes('params')) context += ', params'
+        for (const key of keys) {
+          const handler = statementsRegistry.get(key)
+          if (handler) {
+            const result = await handler(typedDef[key], {
+              actionName,
+              actionDef,
+              entity,
+              isApi,
+              useInertia,
+              pluralName,
+              singularName,
+              generators,
+              models,
+            })
+
+            logicLines.push(...result.logicLines)
+            if (result.imports) {
+              if (result.imports.models)
+                result.imports.models.forEach((i) => imports.models.add(i))
+              if (result.imports.validators)
+                result.imports.validators.forEach((i) => imports.validators.add(i))
+              if (result.imports.events)
+                result.imports.events.forEach((i) => imports.events.add(i))
+              if (result.imports.policies)
+                result.imports.policies.forEach((i) => imports.policies.add(i))
+              if (result.imports.mails) result.imports.mails.forEach((i) => imports.mails.add(i))
+              if (result.imports.jobs) result.imports.jobs.forEach((i) => imports.jobs.add(i))
+              if (result.imports.notifications)
+                result.imports.notifications.forEach((i) => imports.notifications.add(i))
+              if (result.imports.services)
+                result.imports.services.forEach((i) => {
+                  const servicePath = string.snakeCase(i.replace('Service', '')) + '_service'
+                  imports.services.set(i, servicePath)
+                })
+            }
+            if (result.context) {
+              result.context.forEach((c) => contextItems.add(c))
+            }
           }
-          imports.models.add(entity.className)
-        }
-
-        if (typedDef.authorize) {
-          const authParts = (typedDef.authorize as string).split(',')
-          const action = authParts[0].trim()
-          const modelArg = authParts[1] ? `, ${authParts[1].trim()}` : ''
-          const policyName = `${entity.className}Policy`
-          logicLines.push(`await bouncer.with(${policyName}).authorize('${action}'${modelArg})`)
-          imports.policies.add(policyName)
-          if (!context.includes('bouncer')) context += ', bouncer'
-        }
-
-        if (typedDef.validate) {
-          const validatorName =
-            actionName === 'store' || actionName === 'update'
-              ? `${actionName === 'store' ? 'create' : 'update'}${entity.className}Validator`
-              : 'validator'
-          logicLines.push(`const payload = await request.validateUsing(${validatorName})`)
-          imports.validators.add(validatorName)
-        }
-
-        if (typedDef.save) {
-          logicLines.push(`await ${entity.className}.create(payload)`)
-          imports.models.add(entity.className)
-        }
-
-        if (typedDef.delete) {
-          logicLines.push(`const model = await ${entity.className}.findOrFail(params.id)`)
-          logicLines.push(`await model.delete()`)
-          imports.models.add(entity.className)
-          if (!context.includes('params')) context += ', params'
-        }
-
-        if (typedDef.fire) {
-          const eventName = typedDef.fire
-          logicLines.push(`emitter.emit(new ${eventName}(payload))`)
-          imports.events.add(eventName)
-          await eventGenerator.generate(eventName)
-          if (!context.includes('emitter')) context += ', emitter'
-        }
-
-        if (typedDef.send) {
-          const mailName = typedDef.send
-          logicLines.push(`await mail.sendLater(new ${mailName}(payload))`)
-          await mailGenerator.generate(mailName)
-          if (!context.includes('mail')) context += ', mail'
-        }
-
-        if (typedDef.dispatch) {
-          const jobName = typedDef.dispatch
-          logicLines.push(`await new ${jobName}(payload).handle()`)
-          await jobGenerator.generate(jobName)
-        }
-
-        if (typedDef.notify) {
-          const notifyParts = typedDef.notify.split(', ')
-          const target = notifyParts[0].trim()
-          const notificationName = notifyParts[1].trim()
-          logicLines.push(`await ${target}.notify(new ${notificationName}(payload))`)
-          await notificationGenerator.generate(notificationName)
-        }
-
-        if (typedDef.upload) {
-          const uploadParts = typedDef.upload.split(' to: ')
-          const field = uploadParts[0].trim()
-          const disk = uploadParts[1] ? `, '${uploadParts[1].trim()}'` : ''
-          logicLines.push(
-            `const ${field}File = request.file('${field}', { size: '2mb', extnames: ['jpg', 'png', 'pdf'] })!`
-          )
-          logicLines.push(`await ${field}File.moveToDisk(''${disk})`)
-        }
-
-        if (typedDef.auth) {
-          logicLines.push(`const user = auth.user!`)
-          if (!context.includes('auth')) context += ', auth'
-        }
-
-        if (typedDef.render) {
-          const parts = typedDef.render.split(' with: ')
-          const viewPath = parts[0]
-
-          if (isApi || viewPath === 'json') {
-            // Basic JSON response assuming the variable from query or save is available
-            const responseData = parts[1]
-              ? parts[1]
-              : actionName === 'store' || actionName === 'update'
-                ? 'payload'
-                : 'data'
-            logicLines.push(`return response.json({ ${responseData} })`)
-          } else if (useInertia) {
-            const data = parts[1] ? `, { ${parts[1]} }` : ''
-            logicLines.push(`return inertia.render('${viewPath}'${data})`)
-            if (!context.includes('inertia')) context += ', inertia'
-          } else {
-            const data = parts[1] ? `, { ${parts[1]} }` : ''
-            logicLines.push(`return view.render('${viewPath}'${data})`)
-            if (!context.includes('view')) context += ', view'
-          }
-        }
-
-        if (typedDef.redirect) {
-          logicLines.push(`return response.redirect().toRoute('${typedDef.redirect}')`)
-        }
-
-        if (typedDef.flash) {
-          logicLines.push(`session.flash('${typedDef.flash}', 'Success!')`)
-          if (!context.includes('session')) context += ', session'
         }
       }
 
       actions.push({
         name: actionName,
-        context,
+        context: Array.from(contextItems).join(', '),
         logic: logicLines.join('\n    ') || '// Action logic here',
       })
     }
@@ -217,6 +178,10 @@ export class ControllerGenerator extends BaseGenerator {
           validators: Array.from(imports.validators),
           events: Array.from(imports.events),
           policies: Array.from(imports.policies),
+          mails: Array.from(imports.mails),
+          jobs: Array.from(imports.jobs),
+          notifications: Array.from(imports.notifications),
+          services: Array.from(imports.services.entries()).map(([name, path]) => ({ name, path })),
         },
       },
       definition.stub

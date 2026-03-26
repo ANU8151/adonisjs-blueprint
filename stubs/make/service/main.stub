@@ -1,0 +1,8 @@
+{{{
+  exports({
+    to: app.makePath('app/services', entity.path, entity.name.toLowerCase() + '_service.ts')
+  })
+}}}
+export default class {{ entity.className }}Service {
+  // Add your service logic here
+}

@@ -41,8 +41,25 @@ export class ValidatorGenerator extends BaseGenerator {
           const modifier = parts[i]
           if (modifier === 'unique') {
             const tableName = string.plural(string.snakeCase(entity.name))
-            vineChain += `.unique(async (db, value) => { return !await db.from('${tableName}').where('${attrName}', value).first() })`
-          } else if (modifier === 'min' && parts[i + 1]) {
+            const scope = parts.find((p) => p.startsWith('scope:'))
+            if (scope) {
+              const scopeColumn = scope.replace('scope:', '')
+              vineChain += `.unique(async (db, value, field) => { 
+                const query = db.from('${tableName}').where('${attrName}', value)
+                if (field.meta.id) query.whereNot('id', field.meta.id)
+                const scopeValue = field.meta['${scopeColumn}'] || field.data['${scopeColumn}']
+                if (scopeValue) query.where('${scopeColumn}', scopeValue)
+                return !await query.first() 
+              })`
+            } else {
+              vineChain += `.unique(async (db, value, field) => { 
+                const query = db.from('${tableName}').where('${attrName}', value)
+                if (field.meta.id) query.whereNot('id', field.meta.id)
+                return !await query.first() 
+              })`
+            }
+          }
+ else if (modifier === 'min' && parts[i + 1]) {
             vineChain +=
               baseType === 'number' ? `.min(${parts[i + 1]})` : `.minLength(${parts[i + 1]})`
             i++
@@ -60,6 +77,10 @@ export class ValidatorGenerator extends BaseGenerator {
           }
         }
         attributes.push({ name: attrName, vineType: vineChain.replace('vine.', '') })
+
+        if (parts.includes('confirmed')) {
+          attributes.push({ name: `${attrName}_confirmation`, vineType: vineChain.replace('vine.', '').replace('.confirmed()', '') })
+        }
       }
     }
 

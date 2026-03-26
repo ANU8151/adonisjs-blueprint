@@ -5,6 +5,9 @@
 }}}
 import {{ entity.className }} from '#models/{{ entity.name.toLowerCase() }}'
 import Factory from '@adonisjs/lucid/factories'
+@each(factory in factoryImports)
+import { {{ factory }} } from './{{ factory.replace('Factory', '').toLowerCase() }}_factory'
+@end
 
 export const {{ entity.className }}Factory = Factory
   .define({{ entity.className }}, ({ faker }) => {
