@@ -97,8 +97,9 @@ export class ModelGenerator extends BaseGenerator {
       'make/model/main.stub',
       {
         entity,
-        attributes,
-        relationships,
+        attributes: attributes.map((a) => a.line).join('\n\n  '),
+        relationshipsImports: relationships.map((r) => r.importLine).join('\n'),
+        relationshipsLines: relationships.map((r) => r.line).join('\n\n  '),
         modelImports,
         modelSignature,
       },

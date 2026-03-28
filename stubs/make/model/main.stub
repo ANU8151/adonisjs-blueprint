@@ -4,16 +4,10 @@
   })
 }}}
 {{{ modelImports }}}
-@each(rel in relationships)
-{{{ rel.importLine }}}
-@end
+{{{ relationshipsImports }}}
 
 {{{ modelSignature }}}
-@each(attr in attributes)
-  {{{ attr.line }}}
-@end
+  {{{ attributes }}}
 
-@each(rel in relationships)
-  {{{ rel.line }}}
-@end
+  {{{ relationshipsLines }}}
 }
