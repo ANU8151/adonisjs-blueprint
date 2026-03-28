@@ -8,6 +8,7 @@
   "type": "module",
   "files": [
     "build",
+    "stubs",
     "!build/bin",
     "!build/tests"
   ],
@@ -93,6 +94,7 @@
     "entry": [
       "./index.ts",
       "./configure.ts",
+      "./stubs/main.ts",
       "./src/commands/main.ts",
       "./src/commands/build.ts",
       "./src/commands/erase.ts",
