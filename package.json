@@ -16,7 +16,7 @@
   "exports": {
     ".": "./build/index.js",
     "./types": "./build/src/types.js",
-    "./commands": "./build/src/commands/main.js"
+    "./commands/*": "./build/src/commands/*.js"
   },
   "scripts": {
     "copy:templates": "copyfiles \"stubs/**/*.stub\" build",
@@ -81,7 +81,11 @@
   ],
   "adonisjs": {
     "commands": [
-      "@anu8151/adonisjs-blueprint/commands"
+      "@anu8151/adonisjs-blueprint/commands/build",
+      "@anu8151/adonisjs-blueprint/commands/erase",
+      "@anu8151/adonisjs-blueprint/commands/init",
+      "@anu8151/adonisjs-blueprint/commands/stubs",
+      "@anu8151/adonisjs-blueprint/commands/trace"
     ]
   },
   "author": "ANU8151",
@@ -95,7 +99,6 @@
       "./index.ts",
       "./configure.ts",
       "./stubs/main.ts",
-      "./src/commands/main.ts",
       "./src/commands/build.ts",
       "./src/commands/erase.ts",
       "./src/commands/trace.ts",
