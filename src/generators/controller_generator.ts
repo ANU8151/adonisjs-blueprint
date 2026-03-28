@@ -19,10 +19,10 @@ export class ControllerGenerator extends BaseGenerator {
     models?: any
   ) {
     const nameParts = name.split(/[\/.]/)
-    const baseName = nameParts.pop()! // Handle nested names like Post.Comment or Admin/Post
+    const baseName = nameParts.pop() || ''
     const entity = this.app.generators.createEntity(baseName) as Entity
     if (nameParts.length > 0) {
-      entity.path = nameParts.map((p) => string.snakeCase(p)).join('/')
+      entity.path = nameParts.map((p) => string.snakeCase(p || '')).join('/')
     }
 
     const eventGenerator = new EventGenerator(this.app, this.logger, this.manifest)
@@ -45,8 +45,8 @@ export class ControllerGenerator extends BaseGenerator {
 
     const middleware = definition.middleware || []
 
-    const pluralName = string.plural(string.camelCase(entity.name))
-    const singularName = string.camelCase(entity.name)
+    const pluralName = string.plural(string.camelCase(entity.name || ''))
+    const singularName = string.camelCase(entity.name || '')
 
     // Support resource: true shorthand
     let normalizedDefinition = definition
@@ -135,25 +135,33 @@ export class ControllerGenerator extends BaseGenerator {
 
             logicLines.push(...result.logicLines)
             if (result.imports) {
-              if (result.imports.models) result.imports.models.forEach((i) => imports.models.add(i))
+              if (result.imports.models)
+                result.imports.models.forEach((i: string) => i && imports.models.add(i))
               if (result.imports.validators)
-                result.imports.validators.forEach((i) => imports.validators.add(i))
-              if (result.imports.events) result.imports.events.forEach((i) => imports.events.add(i))
+                result.imports.validators.forEach((i: string) => i && imports.validators.add(i))
+              if (result.imports.events)
+                result.imports.events.forEach((i: string) => i && imports.events.add(i))
               if (result.imports.policies)
-                result.imports.policies.forEach((i) => imports.policies.add(i))
-              if (result.imports.mails) result.imports.mails.forEach((i) => imports.mails.add(i))
-              if (result.imports.jobs) result.imports.jobs.forEach((i) => imports.jobs.add(i))
+                result.imports.policies.forEach((i: string) => i && imports.policies.add(i))
+              if (result.imports.mails)
+                result.imports.mails.forEach((i: string) => i && imports.mails.add(i))
+              if (result.imports.jobs)
+                result.imports.jobs.forEach((i: string) => i && imports.jobs.add(i))
               if (result.imports.notifications)
-                result.imports.notifications.forEach((i) => imports.notifications.add(i))
+                result.imports.notifications.forEach(
+                  (i: string) => i && imports.notifications.add(i)
+                )
               if (result.imports.services)
-                result.imports.services.forEach((serviceName) => {
-                  const servicePath =
-                    string.snakeCase(serviceName.replace('Service', '')) + '_service'
-                  imports.services.set(serviceName, servicePath)
+                result.imports.services.forEach((serviceName: string) => {
+                  if (serviceName) {
+                    const servicePath =
+                      string.snakeCase(serviceName.replace('Service', '')) + '_service'
+                    imports.services.set(serviceName, servicePath)
+                  }
                 })
             }
             if (result.context) {
-              result.context.forEach((c) => contextItems.add(c))
+              result.context.forEach((c: string) => c && contextItems.add(c))
             }
           }
         }
@@ -168,19 +176,23 @@ export class ControllerGenerator extends BaseGenerator {
 
     const importsLines: string[] = []
     imports.models.forEach((model) => {
-      importsLines.push(`import ${model} from '#models/${string.snakeCase(model)}'`)
+      if (model) importsLines.push(`import ${model} from '#models/${string.snakeCase(model)}'`)
     })
     imports.validators.forEach((v) => {
-      importsLines.push(`import { ${v} } from '#validators/${entity.name.toLowerCase()}'`)
+      if (v)
+        importsLines.push(`import { ${v} } from '#validators/${(entity.name || '').toLowerCase()}'`)
     })
     imports.events.forEach((e) => {
-      importsLines.push(`import ${e} from '#events/${e.toLowerCase()}'`)
+      if (e) importsLines.push(`import ${e} from '#events/${e.toLowerCase()}'`)
     })
     imports.policies.forEach((p) => {
-      importsLines.push(`import ${p} from '#policies/${entity.name.toLowerCase()}_policy'`)
+      if (p)
+        importsLines.push(
+          `import ${p} from '#policies/${(entity.name || '').toLowerCase()}_policy'`
+        )
     })
     imports.services.forEach((path, serviceName) => {
-      importsLines.push(`import ${serviceName} from '#services/${path}'`)
+      if (serviceName && path) importsLines.push(`import ${serviceName} from '#services/${path}'`)
     })
 
     const middlewareLines =
