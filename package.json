@@ -81,7 +81,7 @@
   ],
   "adonisjs": {
     "commands": [
-      "@anu8151/adonisjs-blueprint/commands"
+      "./build/src/commands/main.js"
     ]
   },
   "author": "ANU8151",
