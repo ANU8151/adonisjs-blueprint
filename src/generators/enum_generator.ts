@@ -10,7 +10,8 @@ export class EnumGenerator extends BaseGenerator {
 
     await this.generateStub('make/enum/main.stub', {
       entity,
-      values,
+      values, // Keep for tests
+      valuesLines: values.map((v: any) => `${v.key} = '${v.value}'`).join(',\n  '),
     })
   }
 }

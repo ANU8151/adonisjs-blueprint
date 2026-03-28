@@ -4,7 +4,5 @@
   })
 }}}
 export enum {{ entity.className }} {
-  @each(val in values)
-  {{ val.key }} = '{{ val.value }}',
-  @end
+  {{{ valuesLines }}}
 }
