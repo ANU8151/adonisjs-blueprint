@@ -7,14 +7,16 @@ export default class TraceBlueprint extends BaseCommand {
   static commandName = 'blueprint:trace'
   static description = 'Trace the database and generate a draft.yaml file'
 
+  static options = {
+    startApp: true,
+  }
+
   async run() {
     this.logger.info('Tracing database to generate draft.yaml...')
 
     try {
-      // Dynamic import with template literal to bypass TypeScript static analysis
-      const modulePath = '@adonisjs/lucid/services/db'
-      const db = (await import(modulePath)) as any
-      const connection = db.default.connection()
+      const db = (await this.app.container.make('lucid.db')) as any
+      const connection = db.connection()
       const tables = await connection.inspect()
 
       const draft: any = {
