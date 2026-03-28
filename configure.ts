@@ -18,5 +18,8 @@ import { stubsRoot } from './stubs/main.js'
 export async function configure(command: Configure) {
   const codemods = await command.createCodemods()
 
+  /**
+   * Publish config file
+   */
   await codemods.makeUsingStub(stubsRoot, 'config.stub', {})
 }
