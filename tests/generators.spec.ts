@@ -291,7 +291,6 @@ test.group('Generators', () => {
     await assert.fileExists('resources/views/posts/index.edge')
     const content = await fs.contents('resources/views/posts/index.edge')
     assert.include(content, "@layout.app({ title: 'Posts/index index' })")
-
   })
 
   test('generate react view', async ({ assert, fs }) => {
@@ -418,4 +417,3 @@ test.group('Generators', () => {
     assert.include(content, 'loginAs(user)')
   })
 })
-

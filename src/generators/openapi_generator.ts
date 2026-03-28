@@ -42,13 +42,17 @@ export class OpenAPIGenerator extends BaseGenerator {
             schema.properties[attrName] = {
               type: this.mapToOpenAPIType(typeStr),
             }
-            if (typeof attrType === 'string' && !attrType.includes('optional') && !attrType.includes('nullable')) {
-              schema.required.push(attrName);
+            if (
+              typeof attrType === 'string' &&
+              !attrType.includes('optional') &&
+              !attrType.includes('nullable')
+            ) {
+              schema.required.push(attrName)
             }
           }
         }
-        
-        if (schema.required.length === 0) delete schema.required;
+
+        if (schema.required.length === 0) delete schema.required
 
         openapi.components.schemas[modelName] = schema
       }
@@ -57,7 +61,11 @@ export class OpenAPIGenerator extends BaseGenerator {
     // Generate paths from controllers
     for (const [controllerName, controllerDef] of Object.entries(blueprint.controllers)) {
       const resourceName = string.snakeCase(controllerName)
-      const normalizedDefinition = this.normalizeDefinition(controllerDef, blueprint.settings?.api, controllerName)
+      const normalizedDefinition = this.normalizeDefinition(
+        controllerDef,
+        blueprint.settings?.api,
+        controllerName
+      )
       const modelName = string.pascalCase(string.singular(controllerName))
 
       for (const [actionName, actionDef] of Object.entries(normalizedDefinition)) {
@@ -97,9 +105,10 @@ export class OpenAPIGenerator extends BaseGenerator {
 
         // Handle request body
         if ((actionDef as any).validate) {
-          const validateFields = (actionDef as any).validate === 'all' 
-            ? Object.keys(blueprint.models?.[modelName]?.attributes || {})
-            : (actionDef as any).validate.split(',').map((f: string) => f.trim())
+          const validateFields =
+            (actionDef as any).validate === 'all'
+              ? Object.keys(blueprint.models?.[modelName]?.attributes || {})
+              : (actionDef as any).validate.split(',').map((f: string) => f.trim())
 
           operation.requestBody = {
             content: {
@@ -114,7 +123,8 @@ export class OpenAPIGenerator extends BaseGenerator {
 
           for (const field of validateFields) {
             const attrType = blueprint.models?.[modelName]?.attributes?.[field]
-            const typeStr = typeof attrType === 'string' ? attrType : (attrType as any)?.type || 'string'
+            const typeStr =
+              typeof attrType === 'string' ? attrType : (attrType as any)?.type || 'string'
             operation.requestBody.content['application/json'].schema.properties[field] = {
               type: this.mapToOpenAPIType(typeStr),
             }
@@ -130,7 +140,10 @@ export class OpenAPIGenerator extends BaseGenerator {
         }
 
         // Handle response mapping
-        if ((actionDef as any).query === 'all' || (actionDef as any).query?.startsWith('paginate')) {
+        if (
+          (actionDef as any).query === 'all' ||
+          (actionDef as any).query?.startsWith('paginate')
+        ) {
           operation.responses['200'].content = {
             'application/json': {
               schema: {

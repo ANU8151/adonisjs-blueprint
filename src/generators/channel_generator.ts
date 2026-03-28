@@ -3,9 +3,9 @@ import { BaseGenerator } from './base_generator.js'
 export class ChannelGenerator extends BaseGenerator {
   async generate(_name: string, channels: Record<string, any>) {
     const outputPath = this.app.makePath('start/transmission.ts')
-    
+
     let content = "import transmission from '@adonisjs/transmission/services/main'\n\n"
-    
+
     for (const [name, definition] of Object.entries(channels)) {
       const channelName = (definition as any).name || name.toLowerCase()
       content += `transmission.authorize('${channelName}', async (user) => {\n`
