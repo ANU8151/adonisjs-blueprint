@@ -18,7 +18,7 @@ export default class InitBlueprint extends BaseCommand {
       }
     }
 
-    const content = `# yaml-language-server: $schema=node_modules/adonis-blueprint/build/src/schema.json
+    const content = `# yaml-language-server: $schema=node_modules/@anu8151/adonisjs-blueprint/build/src/schema.json
 
 settings:
   api: true

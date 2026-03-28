@@ -26,13 +26,13 @@ A professional-grade code generator for AdonisJS 7 inspired by [Laravel Blueprin
 Install the package via npm:
 
 ```sh
-npm install adonis-blueprint
+npm install @anu8151/adonisjs-blueprint
 ```
 
 Configure the package to publish the default configuration:
 
 ```sh
-node ace configure adonis-blueprint
+node ace configure @anu8151/adonisjs-blueprint
 ```
 
 ## Developer Experience (DX)
@@ -40,7 +40,7 @@ node ace configure adonis-blueprint
 To enable **Auto-completion** and **Validation** in VS Code, add the following comment to the top of your `draft.yaml`:
 
 ```yaml
-# yaml-language-server: $schema=node_modules/adonis-blueprint/build/src/schema.json
+# yaml-language-server: $schema=node_modules/@anu8151/adonisjs-blueprint/build/src/schema.json
 
 settings:
   api: true
