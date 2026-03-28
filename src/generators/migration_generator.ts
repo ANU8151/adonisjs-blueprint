@@ -13,13 +13,14 @@ export class MigrationGenerator extends BaseGenerator {
         let migrationLine = ''
         if (typeof attrType === 'string') {
           if (attrType === 'foreign') {
-            migrationLine = `table.integer('${attrName}').unsigned().references('id').inTable('${string.plural(attrName.replace('_id', ''))}')`
+            migrationLine = `table.integer('${attrName}').unsigned().references('id').inTable('${string.plural(attrName.replace('_id', '') || '')}')`
           } else if (attrType.startsWith('enum:')) {
-            const values = attrType
-              .split(':')[1]
-              .split(',')
-              .map((v) => `'${v.trim()}'`)
-              .join(', ')
+            const values =
+              attrType
+                .split(':')[1]
+                ?.split(',')
+                .map((v) => `'${v.trim()}'`)
+                .join(', ') || ''
             migrationLine = `table.enum('${attrName}', [${values}])`
           } else {
             migrationLine = `table.${attrType}('${attrName}')`
@@ -32,10 +33,11 @@ export class MigrationGenerator extends BaseGenerator {
 
     // Smart inference: add foreign keys from relationships if not already present
     if (definition.relationships) {
-      for (const [relName, relType] of Object.entries(definition.relationships)) {
+      for (const [relName, relValue] of Object.entries(definition.relationships)) {
+        const relType = typeof relValue === 'string' ? relValue : (relValue as any).type
         if (relType === 'belongsTo' && !processedAttributes.has(`${relName}_id`)) {
           attributes.push({
-            migrationLine: `table.integer('${relName}_id').unsigned().references('id').inTable('${string.plural(relName)}').onDelete('CASCADE')`,
+            migrationLine: `table.integer('${relName}_id').unsigned().references('id').inTable('${string.plural(relName || '')}').onDelete('CASCADE')`,
           })
         }
       }
@@ -49,7 +51,7 @@ export class MigrationGenerator extends BaseGenerator {
     await this.generateStub('make/migration/main.stub', {
       entity: {
         ...entity,
-        tableName: string.plural(string.snakeCase(entity.name)),
+        tableName: string.plural(string.snakeCase(entity.name || '')),
       },
       attributes, // Keep for tests
       attributesLines: attributes.map((a) => a.migrationLine).join('\n      '),
@@ -57,7 +59,8 @@ export class MigrationGenerator extends BaseGenerator {
 
     // Check for Many-to-Many to generate pivot table
     if (definition.relationships) {
-      for (const [relName, relType] of Object.entries(definition.relationships)) {
+      for (const [relName, relValue] of Object.entries(definition.relationships)) {
+        const relType = typeof relValue === 'string' ? relValue : (relValue as any).type
         if (relType === 'belongsToMany') {
           await this.generatePivotMigration(entity.name, relName)
         }
@@ -66,13 +69,13 @@ export class MigrationGenerator extends BaseGenerator {
   }
 
   private async generatePivotMigration(modelA: string, modelB: string) {
-    const models = [string.snakeCase(modelA), string.snakeCase(modelB)].sort()
+    const models = [string.snakeCase(modelA || ''), string.snakeCase(modelB || '')].sort()
     const tableName = `${models[0]}_${models[1]}`
     const entity = this.app.generators.createEntity(tableName)
 
     const pivotAttributes = [
-      `table.integer('${models[0]}_id').unsigned().references('id').inTable('${string.plural(models[0])}').onDelete('CASCADE')`,
-      `table.integer('${models[1]}_id').unsigned().references('id').inTable('${string.plural(models[1])}').onDelete('CASCADE')`,
+      `table.integer('${models[0]}_id').unsigned().references('id').inTable('${string.plural(models[0] || '')}').onDelete('CASCADE')`,
+      `table.integer('${models[1]}_id').unsigned().references('id').inTable('${string.plural(models[1] || '')}').onDelete('CASCADE')`,
     ]
 
     await this.generateStub('make/migration/main.stub', {

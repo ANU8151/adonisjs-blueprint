@@ -37,7 +37,7 @@ export class ModelGenerator extends BaseGenerator {
           tsType = 'DateTime'
           columnDecorator = '@column.dateTime({ autoCreate: true, autoUpdate: true })'
         } else if (baseType === 'enum') {
-          tsType = 'any' // Enums are handled separately or can be string
+          tsType = 'any'
         }
 
         attributes.push({
@@ -49,18 +49,20 @@ export class ModelGenerator extends BaseGenerator {
 
     // Process relationships for models and implicit columns
     if (definition.relationships) {
-      for (const [relName, relType] of Object.entries(definition.relationships) as [
-        string,
-        string,
-      ][]) {
-        const relatedModelName = string.pascalCase(string.singular(relName))
+      for (const [relName, relValue] of Object.entries(definition.relationships)) {
+        // Blueprint supports 'rel: type' or 'rel: { type: ..., ... }'
+        const relType = typeof relValue === 'string' ? relValue : (relValue as any).type
+        if (!relType) continue
 
-        let relationshipLine = `@${relType}(() => ${relatedModelName})\ndeclare ${relName}: ${relType.charAt(0).toUpperCase() + relType.slice(1)}<typeof ${relatedModelName}>`
+        const relatedModelName = string.pascalCase(string.singular(relName))
+        const relTypeClass = relType.charAt(0).toUpperCase() + relType.slice(1)
+
+        let relationshipLine = `@${relType}(() => ${relatedModelName})\ndeclare ${relName}: ${relTypeClass}<typeof ${relatedModelName}>`
 
         if (relType === 'belongsToMany') {
           const models = [entity.className, relatedModelName].sort()
-          const pivotTable = models.map((m) => string.snakeCase(m)).join('_')
-          relationshipLine = `@${relType}(() => ${relatedModelName}, { pivotTable: '${pivotTable}' })\ndeclare ${relName}: ${relType.charAt(0).toUpperCase() + relType.slice(1)}<typeof ${relatedModelName}>`
+          const pivotTable = models.map((m) => string.snakeCase(m || '')).join('_')
+          relationshipLine = `@${relType}(() => ${relatedModelName}, { pivotTable: '${pivotTable}' })\ndeclare ${relName}: ${relTypeClass}<typeof ${relatedModelName}>`
         }
 
         // Add foreign key column for belongsTo
@@ -75,7 +77,7 @@ export class ModelGenerator extends BaseGenerator {
         }
 
         relationships.push({
-          importLine: `import { ${relType} } from '@adonisjs/lucid/orm'\nimport type { ${relType.charAt(0).toUpperCase() + relType.slice(1)} } from '@adonisjs/lucid/types'\nimport ${relatedModelName} from '#models/${string.snakeCase(relatedModelName)}'`,
+          importLine: `import { ${relType} } from '@adonisjs/lucid/orm'\nimport type { ${relTypeClass} } from '@adonisjs/lucid/types'\nimport ${relatedModelName} from '#models/${string.snakeCase(relatedModelName || '')}'`,
           line: relationshipLine,
         })
       }
