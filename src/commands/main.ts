@@ -7,14 +7,17 @@ export const commands = [
 ]
 
 /**
- * Compatibility with AdonisJS loader expected by Ace Kernel
+ * Metadata for the commands.
+ * Used by Ace Kernel to display help/list.
  */
 export async function getMetaData() {
-  const build = await import('./build.js')
-  const erase = await import('./erase.js')
-  const trace = await import('./trace.js')
-  const stubs = await import('./stubs.js')
-  const init = await import('./init.js')
+  const [build, erase, trace, stubs, init] = await Promise.all([
+    import('./build.js'),
+    import('./erase.js'),
+    import('./trace.js'),
+    import('./stubs.js'),
+    import('./init.js'),
+  ])
 
   return [
     build.default.serialize(),
@@ -25,6 +28,10 @@ export async function getMetaData() {
   ]
 }
 
+/**
+ * Loads a command by its name.
+ * Used by Ace Kernel when running a command.
+ */
 export async function load(commandName: string) {
   const map: Record<string, () => Promise<any>> = {
     'blueprint:build': () => import('./build.js'),
