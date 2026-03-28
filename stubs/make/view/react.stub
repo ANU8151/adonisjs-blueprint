@@ -6,6 +6,9 @@
 import { Head } from '@inertiajs/react'
 
 export default function {{ entity.className }}(props: any) {
+  const singularName = '{{ entity.name.toLowerCase() }}'
+  const pluralName = '{{ entity.name.toLowerCase() }}s'
+
   return (
     <div className="container p-8">
       <Head title="{{ entity.className }} {{ action }}" />
@@ -16,40 +19,32 @@ export default function {{ entity.className }}(props: any) {
         <table className="min-w-full bg-white border">
           <thead>
             <tr>
-              @each(attr in attributes)
-              <th className="px-4 py-2 border-b text-left">{{ attr.name }}</th>
-              @end
+              {{{ tableHeaders }}}
               <th className="px-4 py-2 border-b text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {/* Logic for mapping data goes here */}
+            {props[pluralName]?.map((item: any) => (
+              <tr key={item.id}>
+                {{{ tableCells }}}
+                <td className="px-4 py-2 border-b text-left text-blue-500">
+                   {/* actions placeholder */}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
       @elseif(action === 'create' || action === 'edit')
       <form className="max-w-lg">
-        @each(attr in attributes)
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2">{{ attr.name }}</label>
-          <input 
-            type="text" 
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
-          />
-        </div>
-        @end
+        {{{ formFields }}}
         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
           Save
         </button>
       </form>
       @else
       <div className="bg-white shadow rounded-lg p-6">
-        @each(attr in attributes)
-        <div className="mb-4">
-          <span className="font-bold">{{ attr.name }}:</span>
-          <span className="ml-2">{props.{{ entity.name.toLowerCase() }}?.{{ attr.name }}}</span>
-        </div>
-        @end
+        {{{ showFields }}}
       </div>
       @end
     </div>

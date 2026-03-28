@@ -23,17 +23,13 @@ defineProps<{
         <table class="min-w-full bg-white border">
           <thead>
             <tr>
-              @each(attr in attributes)
-              <th class="px-4 py-2 border-b text-left">{{ attr.name }}</th>
-              @end
+              {{{ tableHeaders }}}
               <th class="px-4 py-2 border-b text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="item in {{ entity.name.toLowerCase() }}s" :key="item.id">
-              @each(attr in attributes)
-              <td class="px-4 py-2 border-b text-left">{{ '{{' }} item.{{ attr.name }} {{ '}}' }}</td>
-              @end
+              {{{ tableCells }}}
               <td class="px-4 py-2 border-b text-left text-blue-500">
                  {/* actions placeholder */}
               </td>
@@ -45,15 +41,7 @@ defineProps<{
 
     <template v-else-if="action === 'create' || action === 'edit'">
       <form class="max-w-lg">
-        @each(attr in attributes)
-        <div class="mb-4">
-          <label class="block text-gray-700 text-sm font-bold mb-2">{{ attr.name }}</label>
-          <input 
-            type="text" 
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
-          />
-        </div>
-        @end
+        {{{ formFields }}}
         <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
           Save
         </button>
@@ -62,12 +50,7 @@ defineProps<{
 
     <template v-else>
       <div class="bg-white shadow rounded-lg p-6">
-        @each(attr in attributes)
-        <div class="mb-4">
-          <span class="font-bold">{{ attr.name }}:</span>
-          <span class="ml-2">{{ '{{' }} {{ entity.name.toLowerCase() }}?.{{ attr.name }} {{ '}}' }}</span>
-        </div>
-        @end
+        {{{ showFields }}}
       </div>
     </template>
   </div>
