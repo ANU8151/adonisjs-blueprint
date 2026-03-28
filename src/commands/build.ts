@@ -14,6 +14,7 @@ import { PolicyGenerator } from '../generators/policy_generator.js'
 import { EnumGenerator } from '../generators/enum_generator.js'
 import { MiddlewareGenerator } from '../generators/middleware_generator.js'
 import { OpenAPIGenerator } from '../generators/openapi_generator.js'
+import { ChannelGenerator } from '../generators/channel_generator.js'
 import string from '@adonisjs/core/helpers/string'
 
 export class BuildBlueprint extends BaseCommand {
@@ -257,10 +258,15 @@ export class BuildBlueprint extends BaseCommand {
       }
     }
 
+    if (blueprint.channels) {
+      const channelGenerator = new ChannelGenerator(this.app, this.logger, this.manifest)
+      await channelGenerator.generate('', blueprint.channels)
+    }
+
     if (blueprint.settings?.api) {
       this.logger.info('Generating API documentation...')
       const openapiGenerator = new OpenAPIGenerator(this.app, this.logger, this.manifest)
-      await openapiGenerator.generate(blueprint)
+      await openapiGenerator.generate('', blueprint)
     }
 
     // Save manifest

@@ -1,4 +1,5 @@
 import { BaseGenerator } from './base_generator.js'
+
 export class ViewGenerator extends BaseGenerator {
   async generate(
     name: string,
@@ -21,11 +22,13 @@ export class ViewGenerator extends BaseGenerator {
       : []
 
     const action = name.split('/').pop() || 'show'
+    const folder = name.split('/').slice(0, -1).join('/')
 
     await this.generateStub(stubPath, {
       entity,
       attributes,
       action,
+      folder,
     })
   }
 }

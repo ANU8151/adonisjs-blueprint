@@ -85,6 +85,17 @@
           "additionalProperties": false
         }
       }
+    },
+    "channels": {
+      "type": "object",
+      "description": "Define your WebSocket channels (Transmission)",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "authorized": { "type": "boolean", "description": "Whether authorization is required" }
+        }
+      }
     }
   }
 }

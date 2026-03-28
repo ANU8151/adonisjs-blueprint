@@ -49,4 +49,5 @@ export interface BlueprintSchema {
   auth?: Record<string, any> | boolean
   models?: Record<string, any>
   controllers?: Record<string, any>
+  channels?: Record<string, any>
 }

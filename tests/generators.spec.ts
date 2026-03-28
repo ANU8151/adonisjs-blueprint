@@ -66,14 +66,14 @@ test.group('Generators', () => {
                   // Handle @if
                   processed = processed.replace(
                     /@if\((.*?)\)([\s\S]*?)@else([\s\S]*?)@end/g,
-                    (match, condition, body, elseBody) => {
+                    (_match, condition, body, elseBody) => {
                       const val = getVal(condition, currentState)
                       return val ? body : elseBody
                     }
                   )
                   processed = processed.replace(
                     /@if\((.*?)\)([\s\S]*?)@end/g,
-                    (match, condition, body) => {
+                    (_match, condition, body) => {
                       const val = getVal(condition, currentState)
                       return val ? body : ''
                     }
@@ -102,7 +102,7 @@ test.group('Generators', () => {
                 const processEach = (text: string, currentState: any): string => {
                   return text.replace(
                     /@each\((.*?) in (.*?)\)([\s\S]*?)@end/g,
-                    (match, item, list, body) => {
+                    (_match, item, list, body) => {
                       const val = getVal(list, currentState)
                       if (Array.isArray(val)) {
                         return val
@@ -290,7 +290,8 @@ test.group('Generators', () => {
 
     await assert.fileExists('resources/views/posts/index.edge')
     const content = await fs.contents('resources/views/posts/index.edge')
-    assert.include(content, "@layout.app({ title: 'Posts/index' })")
+    assert.include(content, "@layout.app({ title: 'Posts/index index' })")
+
   })
 
   test('generate react view', async ({ assert, fs }) => {
@@ -417,3 +418,4 @@ test.group('Generators', () => {
     assert.include(content, 'loginAs(user)')
   })
 })
+

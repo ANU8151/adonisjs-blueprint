@@ -4,13 +4,13 @@ import string from '@adonisjs/core/helpers/string'
 import { writeFileSync } from 'node:fs'
 
 export class OpenAPIGenerator extends BaseGenerator {
-  async generate(blueprint: BlueprintSchema) {
+  async generate(_name: string, blueprint: BlueprintSchema) {
     if (!blueprint.controllers) return
 
     const openapi: any = {
       openapi: '3.0.0',
       info: {
-        title: 'AdonisJS API',
+        title: blueprint.settings?.api ? 'AdonisJS API Documentation' : 'AdonisJS Application API',
         version: '1.0.0',
       },
       paths: {},
@@ -32,6 +32,7 @@ export class OpenAPIGenerator extends BaseGenerator {
         const schema: any = {
           type: 'object',
           properties: {},
+          required: [],
         }
 
         if (modelDef.attributes) {
@@ -41,8 +42,13 @@ export class OpenAPIGenerator extends BaseGenerator {
             schema.properties[attrName] = {
               type: this.mapToOpenAPIType(typeStr),
             }
+            if (typeof attrType === 'string' && !attrType.includes('optional') && !attrType.includes('nullable')) {
+              schema.required.push(attrName);
+            }
           }
         }
+        
+        if (schema.required.length === 0) delete schema.required;
 
         openapi.components.schemas[modelName] = schema
       }
@@ -51,7 +57,8 @@ export class OpenAPIGenerator extends BaseGenerator {
     // Generate paths from controllers
     for (const [controllerName, controllerDef] of Object.entries(blueprint.controllers)) {
       const resourceName = string.snakeCase(controllerName)
-      const normalizedDefinition = this.normalizeDefinition(controllerDef, blueprint.settings?.api)
+      const normalizedDefinition = this.normalizeDefinition(controllerDef, blueprint.settings?.api, controllerName)
+      const modelName = string.pascalCase(string.singular(controllerName))
 
       for (const [actionName, actionDef] of Object.entries(normalizedDefinition)) {
         if (actionName === 'resource' || actionName === 'middleware' || actionName === 'stub')
@@ -62,7 +69,7 @@ export class OpenAPIGenerator extends BaseGenerator {
 
         if (!openapi.paths[path]) openapi.paths[path] = {}
 
-        openapi.paths[path][method] = {
+        const operation: any = {
           tags: [controllerName],
           summary: `${actionName} action for ${controllerName}`,
           responses: {
@@ -72,29 +79,91 @@ export class OpenAPIGenerator extends BaseGenerator {
           },
         }
 
-        if (actionDef.auth) {
-          openapi.paths[path][method].security = [{ bearerAuth: [] }]
+        // Add ID parameter for specific routes
+        if (path.includes('{id}')) {
+          operation.parameters = [
+            {
+              name: 'id',
+              in: 'path',
+              required: true,
+              schema: { type: 'string' },
+            },
+          ]
         }
 
-        // Add request body for store/update
-        if (actionName === 'store' || actionName === 'update') {
-          openapi.paths[path][method].requestBody = {
+        if ((actionDef as any).auth) {
+          operation.security = [{ bearerAuth: [] }]
+        }
+
+        // Handle request body
+        if ((actionDef as any).validate) {
+          const validateFields = (actionDef as any).validate === 'all' 
+            ? Object.keys(blueprint.models?.[modelName]?.attributes || {})
+            : (actionDef as any).validate.split(',').map((f: string) => f.trim())
+
+          operation.requestBody = {
             content: {
               'application/json': {
                 schema: {
-                  $ref: `#/components/schemas/${string.pascalCase(string.singular(controllerName))}`,
+                  type: 'object',
+                  properties: {},
                 },
               },
             },
           }
+
+          for (const field of validateFields) {
+            const attrType = blueprint.models?.[modelName]?.attributes?.[field]
+            const typeStr = typeof attrType === 'string' ? attrType : (attrType as any)?.type || 'string'
+            operation.requestBody.content['application/json'].schema.properties[field] = {
+              type: this.mapToOpenAPIType(typeStr),
+            }
+          }
+        } else if (actionName === 'store' || actionName === 'update') {
+          operation.requestBody = {
+            content: {
+              'application/json': {
+                schema: { $ref: `#/components/schemas/${modelName}` },
+              },
+            },
+          }
         }
+
+        // Handle response mapping
+        if ((actionDef as any).query === 'all' || (actionDef as any).query?.startsWith('paginate')) {
+          operation.responses['200'].content = {
+            'application/json': {
+              schema: {
+                type: 'array',
+                items: { $ref: `#/components/schemas/${modelName}` },
+              },
+            },
+          }
+          if ((actionDef as any).query.startsWith('paginate')) {
+            if (!operation.parameters) operation.parameters = []
+            operation.parameters.push(
+              { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+              { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } }
+            )
+          }
+        } else if ((actionDef as any).query === 'find') {
+          operation.responses['200'].content = {
+            'application/json': {
+              schema: { $ref: `#/components/schemas/${modelName}` },
+            },
+          }
+        }
+
+        openapi.paths[path][method] = operation
       }
     }
 
     const outputPath = this.app.makePath('openapi.json')
     writeFileSync(outputPath, JSON.stringify(openapi, null, 2))
     this.logger.action(`create ${outputPath}`).succeeded()
-    this.manifest.push(outputPath)
+    if (this.manifest) {
+      this.manifest.push(outputPath)
+    }
   }
 
   private mapToOpenAPIType(type: string): string {
@@ -114,9 +183,9 @@ export class OpenAPIGenerator extends BaseGenerator {
     }
   }
 
-  private normalizeDefinition(definition: any, isApi?: boolean) {
+  private normalizeDefinition(definition: any, isApi?: boolean, controllerName?: string) {
     if (definition.resource) {
-      const pluralName = string.plural(string.camelCase(definition.name || ''))
+      const pluralName = string.plural(string.camelCase(controllerName || ''))
       return isApi
         ? {
             index: { query: 'all', render: 'json' },

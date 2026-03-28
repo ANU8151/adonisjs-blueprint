@@ -9,7 +9,7 @@ import { writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import string from '@adonisjs/core/helpers/string'
 
 test.group('Features', () => {
-  const setupGenerator = (GeneratorClass: any, fs: any, type: string) => {
+  const setupGenerator = (GeneratorClass: any, fs: any, _type: string) => {
     const app = {
       makePath: (...args: string[]) => {
         const path = join(fs.basePath, ...args)

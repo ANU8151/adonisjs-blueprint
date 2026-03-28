@@ -41,7 +41,7 @@ export class ValidatorGenerator extends BaseGenerator {
           const modifier = parts[i]
           if (modifier === 'unique') {
             const tableName = string.plural(string.snakeCase(entity.name))
-            const scope = parts.find((p) => p.startsWith('scope:'))
+            const scope = parts.find((p: string) => p.startsWith('scope:'))
             if (scope) {
               const scopeColumn = scope.replace('scope:', '')
               vineChain += `.unique(async (db, value, field) => { 
