@@ -20,13 +20,20 @@ export class PolicyGenerator extends BaseGenerator {
       actions.push({
         name: policyAction,
         modelName: entity.className,
-        variableName: string.camelCase(entity.className),
+        variableName: string.camelCase(entity.className || ''),
       })
     }
 
+    const actionLines = actions
+      .map((action) => {
+        return `${action.name}(user: User, ${action.variableName}: ${action.modelName}): AuthorizerResponse {\n    return true\n  }`
+      })
+      .join('\n\n  ')
+
     await this.generateStub('make/policy/main.stub', {
       entity,
-      actions,
+      actions, // Keep for tests
+      actionLines,
     })
   }
 }
