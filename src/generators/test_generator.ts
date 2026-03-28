@@ -37,10 +37,24 @@ export class TestGenerator extends BaseGenerator {
       })
     }
 
+    const testLines = actions
+      .map((action) => {
+        let logic = ''
+        if (action.auth) {
+          logic = `const user = await User.create({})\n    const response = await client.${action.method}('${action.url}').loginAs(user)`
+        } else {
+          logic = `const response = await client.${action.method}('${action.url}')`
+        }
+
+        return `test('${action.name}', async ({ client }) => {\n    ${logic}\n    response.assertStatus(200)\n  })`
+      })
+      .join('\n\n  ')
+
     await this.generateStub('make/test/controller.stub', {
       entity,
-      actions,
+      actions, // Keep for tests
       hasAuth: actions.some((a) => a.auth) || !!blueprint.auth,
+      testLines,
     })
   }
 }

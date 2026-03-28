@@ -9,15 +9,5 @@ import User from '#models/user'
 @end
 
 test.group('{{ entity.className }} Controller', () => {
-  @each(action in actions)
-  test('{{ action.name }}', async ({ client }) => {
-    @if(action.auth)
-    const user = await User.create({})
-    const response = await client.{{ action.method }}('{{ action.url }}').loginAs(user)
-    @else
-    const response = await client.{{ action.method }}('{{ action.url }}')
-    @end
-    response.assertStatus(200)
-  })
-  @end
+  {{{ testLines }}}
 })
