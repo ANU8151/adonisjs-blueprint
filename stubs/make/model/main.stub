@@ -4,16 +4,16 @@
   })
 }}}
 {{{ modelImports }}}
-@each(relationship in relationships)
-{{{ relationship.importLine }}}
+@each(rel in relationships)
+{{{ rel.importLine }}}
 @end
 
 {{{ modelSignature }}}
-  @each(attribute in attributes)
-  {{{ attribute.line }}}
-  @end
+@each(attr in attributes)
+  {{{ attr.line }}}
+@end
 
-  @each(relationship in relationships)
-  {{{ relationship.line }}}
-  @end
+@each(rel in relationships)
+  {{{ rel.line }}}
+@end
 }
