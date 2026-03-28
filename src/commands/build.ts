@@ -279,5 +279,3 @@ export default class BuildBlueprint extends BaseCommand {
     this.logger.success('Application built successfully')
   }
 }
-
-export default BuildBlueprint
