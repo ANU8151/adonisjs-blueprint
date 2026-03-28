@@ -27,6 +27,6 @@ export async function configure(command: Configure) {
    * Register commands in adonisrc.ts
    */
   await codemods.updateRcFile((rcFile) => {
-    rcFile.addCommand('@anu8151/adonisjs-blueprint')
+    rcFile.addCommand('@anu8151/adonisjs-blueprint/commands')
   })
 }
