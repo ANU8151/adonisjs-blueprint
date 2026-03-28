@@ -19,7 +19,7 @@
     "./commands": "./build/src/commands/main.js"
   },
   "scripts": {
-    "copy:templates": "copyfiles \"stubs/**/*.stub\" build",
+    "copy:templates": "copyfiles -u 1 \"stubs/**/*.stub\" build/stubs/templates",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",

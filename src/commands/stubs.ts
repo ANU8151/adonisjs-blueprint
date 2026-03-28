@@ -7,11 +7,15 @@ export default class EjectStubs extends BaseCommand {
 
   async run() {
     const stubs = await this.app.stubs.create()
-    await stubs.copy(stubsRoot, {
+
+    // Copy only .stub files if possible, but stubs.copy copies directories.
+    // Since stubsRoot contains config.stub and make/ directory,
+    // we copy everything.
+    await stubs.copy('.', {
       overwrite: false,
       source: stubsRoot,
     })
 
-    this.logger.success('Stubs published to ./stubs/blueprint')
+    this.logger.success('Stubs published to ./stubs')
   }
 }
