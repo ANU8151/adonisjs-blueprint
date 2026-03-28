@@ -10,22 +10,26 @@ export class ModelGenerator extends BaseGenerator {
     const processedAttributes = new Set<string>()
 
     // Core model imports
-    let modelImports = `import { DateTime } from 'luxon'\nimport { column } from '@adonisjs/lucid/orm'\nimport { BaseModel } from '@adonisjs/lucid/orm'`
+    let modelImports = `import { DateTime } from 'luxon'\nimport { column } from '@adonisjs/lucid/orm'\nimport { BaseModel } from '@adonisjs/lucid/orm'\n`
     let modelSignature = `export default class ${entity.className} extends BaseModel {`
 
     // Handle soft deletes
     if (definition.softDeletes) {
-      modelImports = `import { DateTime } from 'luxon'\nimport { column } from '@adonisjs/lucid/orm'\nimport { BaseModel } from '@adonisjs/lucid/orm'\nimport { compose } from '@adonisjs/core/helpers'\nimport { withSoftDeletes } from '@adonisjs/lucid-soft-deletes'`
+      modelImports = `import { DateTime } from 'luxon'\nimport { column } from '@adonisjs/lucid/orm'\nimport { BaseModel } from '@adonisjs/lucid/orm'\nimport { compose } from '@adonisjs/core/helpers'\nimport { withSoftDeletes } from '@adonisjs/lucid-soft-deletes'\n`
       modelSignature = `export default class ${entity.className} extends compose(BaseModel, withSoftDeletes) {`
     }
 
     // Process explicit attributes
     if (definition.attributes) {
-      for (const [attrName, attrType] of Object.entries(definition.attributes)) {
+      for (const [attrName, attrValue] of Object.entries(definition.attributes)) {
+        // Skip 'relationships' key if it's accidentally nested under attributes
+        if (attrName === 'relationships') continue
+
         let tsType = 'string'
         let columnDecorator = '@column()'
 
-        const typeStr = typeof attrType === 'string' ? attrType : (attrType as any).type || 'string'
+        const typeStr =
+          typeof attrValue === 'string' ? attrValue : (attrValue as any).type || 'string'
         const parts = typeStr.split(':')
         const baseType = parts[0]
 
@@ -41,7 +45,7 @@ export class ModelGenerator extends BaseGenerator {
         }
 
         attributes.push({
-          line: `${columnDecorator}\ndeclare ${attrName}: ${tsType}`,
+          line: `${columnDecorator}\n  declare ${attrName}: ${tsType}`,
         })
         processedAttributes.add(attrName)
       }
@@ -57,12 +61,12 @@ export class ModelGenerator extends BaseGenerator {
         const relatedModelName = string.pascalCase(string.singular(relName))
         const relTypeClass = relType.charAt(0).toUpperCase() + relType.slice(1)
 
-        let relationshipLine = `@${relType}(() => ${relatedModelName})\ndeclare ${relName}: ${relTypeClass}<typeof ${relatedModelName}>`
+        let relationshipLine = `@${relType}(() => ${relatedModelName})\n  declare ${relName}: ${relTypeClass}<typeof ${relatedModelName}>`
 
         if (relType === 'belongsToMany') {
           const models = [entity.className, relatedModelName].sort()
           const pivotTable = models.map((m) => string.snakeCase(m || '')).join('_')
-          relationshipLine = `@${relType}(() => ${relatedModelName}, { pivotTable: '${pivotTable}' })\ndeclare ${relName}: ${relTypeClass}<typeof ${relatedModelName}>`
+          relationshipLine = `@${relType}(() => ${relatedModelName}, { pivotTable: '${pivotTable}' })\n  declare ${relName}: ${relTypeClass}<typeof ${relatedModelName}>`
         }
 
         // Add foreign key column for belongsTo
@@ -70,7 +74,7 @@ export class ModelGenerator extends BaseGenerator {
           const foreignKey = `${string.camelCase(relName)}Id`
           if (!processedAttributes.has(foreignKey)) {
             attributes.push({
-              line: `@column()\ndeclare ${foreignKey}: number`,
+              line: `@column()\n  declare ${foreignKey}: number`,
             })
             processedAttributes.add(foreignKey)
           }
@@ -86,12 +90,12 @@ export class ModelGenerator extends BaseGenerator {
     // Always add standard timestamps if not already present
     if (!processedAttributes.has('createdAt')) {
       attributes.push({
-        line: '@column.dateTime({ autoCreate: true })\ndeclare createdAt: DateTime',
+        line: '@column.dateTime({ autoCreate: true })\n  declare createdAt: DateTime',
       })
     }
     if (!processedAttributes.has('updatedAt')) {
       attributes.push({
-        line: '@column.dateTime({ autoCreate: true, autoUpdate: true })\ndeclare updatedAt: DateTime',
+        line: '@column.dateTime({ autoCreate: true, autoUpdate: true })\n  declare updatedAt: DateTime',
       })
     }
 
