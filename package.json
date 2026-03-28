@@ -100,6 +100,7 @@
       "./src/commands/erase.ts",
       "./src/commands/trace.ts",
       "./src/commands/stubs.ts",
+      "./src/commands/init.ts",
       "./src/generators/*.ts",
       "./src/parser.ts"
     ],
@@ -108,7 +109,7 @@
     "format": "esm",
     "minify": "dce-only",
     "fixedExtension": false,
-    "dts": false,
+    "dts": true,
     "treeshake": false,
     "sourcemaps": false,
     "target": "esnext"
