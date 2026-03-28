@@ -51,7 +51,8 @@ export class MigrationGenerator extends BaseGenerator {
         ...entity,
         tableName: string.plural(string.snakeCase(entity.name)),
       },
-      attributes: attributes.map((a) => a.migrationLine).join('\n      '),
+      attributes, // Keep for tests
+      attributesLines: attributes.map((a) => a.migrationLine).join('\n      '),
     })
 
     // Check for Many-to-Many to generate pivot table
