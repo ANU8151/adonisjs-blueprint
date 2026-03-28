@@ -17,7 +17,7 @@ import { OpenAPIGenerator } from '../generators/openapi_generator.js'
 import { ChannelGenerator } from '../generators/channel_generator.js'
 import string from '@adonisjs/core/helpers/string'
 
-export class BuildBlueprint extends BaseCommand {
+export default class BuildBlueprint extends BaseCommand {
   static commandName = 'blueprint:build'
   static description = 'Build the application from the draft.yaml file'
 
