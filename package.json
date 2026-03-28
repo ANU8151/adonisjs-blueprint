@@ -39,6 +39,14 @@
     "blueprint",
     "code-generation"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ANU8151/adonisjs-blueprint.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ANU8151/adonisjs-blueprint/issues"
+  },
+  "homepage": "https://github.com/ANU8151/adonisjs-blueprint#readme",
   "adonisjs": {
     "commands": [
       "@anu8151/adonisjs-blueprint/commands"
