@@ -68,7 +68,7 @@ test.group('Features', () => {
       },
     })
     const state = getCapturedState()
-    assert.include(state.relationships[0].line, "pivotTable: 'role_user'")
+    assert.include(state.relationshipsLines, "pivotTable: 'role_user'")
   })
 
   test('ModelGenerator: softDeletes', async ({ assert, fs }) => {
