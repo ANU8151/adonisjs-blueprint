@@ -1,11 +1,3 @@
-export const commands = [
-  () => import('./build.js'),
-  () => import('./erase.js'),
-  () => import('./trace.js'),
-  () => import('./stubs.js'),
-  () => import('./init.js'),
-]
-
 /**
  * Metadata for the commands.
  * Used by Ace Kernel to display help/list.
@@ -29,10 +21,10 @@ export async function getMetaData() {
 }
 
 /**
- * Loads a command by its name.
- * Used by Ace Kernel when running a command.
+ * Returns the command class for a given metadata object.
+ * This is called when the user actually tries to run the command.
  */
-export async function load(commandName: string) {
+export async function getCommand(metaData: { commandName: string }) {
   const map: Record<string, () => Promise<any>> = {
     'blueprint:build': () => import('./build.js'),
     'blueprint:erase': () => import('./erase.js'),
@@ -41,9 +33,10 @@ export async function load(commandName: string) {
     'blueprint:init': () => import('./init.js'),
   }
 
-  if (map[commandName]) {
-    return map[commandName]()
+  if (map[metaData.commandName]) {
+    const module = await map[metaData.commandName]()
+    return module.default
   }
 
-  throw new Error(`Command "${commandName}" not found`)
+  return null
 }
