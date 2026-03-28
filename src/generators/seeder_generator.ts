@@ -9,6 +9,7 @@ export class SeederGenerator extends BaseGenerator {
       entity,
       count,
       data,
+      dataString: data ? JSON.stringify(data, null, 2) : null,
     })
   }
 }

@@ -13,7 +13,7 @@ import { {{ entity.className }}Factory } from '#database/factories/{{ entity.nam
 export default class extends BaseSeeder {
   async run() {
     @if(data)
-    await {{ entity.className }}.createMany({{ inspect(data) }})
+    await {{ entity.className }}.createMany({{{ dataString }}})
     @else
     await {{ entity.className }}Factory.createMany({{ count }})
     @end
