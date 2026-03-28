@@ -1,7 +1,7 @@
 {
   "name": "@anu8151/adonisjs-blueprint",
   "description": "Blueprint for AdonisJS 7",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "engines": {
     "node": ">=24.0.0"
   },
@@ -16,7 +16,11 @@
   "exports": {
     ".": "./build/index.js",
     "./types": "./build/src/types.js",
-    "./commands": "./build/src/commands/main.js"
+    "./commands/build": "./build/src/commands/build.js",
+    "./commands/erase": "./build/src/commands/erase.js",
+    "./commands/init": "./build/src/commands/init.js",
+    "./commands/stubs": "./build/src/commands/stubs.js",
+    "./commands/trace": "./build/src/commands/trace.js"
   },
   "scripts": {
     "copy:templates": "copyfiles \"stubs/**/*.stub\" build",
@@ -81,7 +85,11 @@
   ],
   "adonisjs": {
     "commands": [
-      "@anu8151/adonisjs-blueprint/commands"
+      "@anu8151/adonisjs-blueprint/commands/build",
+      "@anu8151/adonisjs-blueprint/commands/erase",
+      "@anu8151/adonisjs-blueprint/commands/init",
+      "@anu8151/adonisjs-blueprint/commands/stubs",
+      "@anu8151/adonisjs-blueprint/commands/trace"
     ]
   },
   "author": "ANU8151",
@@ -95,7 +103,6 @@
       "./index.ts",
       "./configure.ts",
       "./stubs/main.ts",
-      "./src/commands/main.ts",
       "./src/commands/build.ts",
       "./src/commands/erase.ts",
       "./src/commands/trace.ts",
