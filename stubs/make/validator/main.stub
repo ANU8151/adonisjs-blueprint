@@ -7,16 +7,12 @@ import vine from '@vinejs/vine'
 
 export const create{{ entity.className }}Validator = vine.compile(
   vine.object({
-    @each(attribute in attributes)
-    {{ attribute.name }}: vine.{{ attribute.vineType }}(),
-    @end
+    {{{ createSchema }}}
   })
 )
 
 export const update{{ entity.className }}Validator = vine.compile(
   vine.object({
-    @each(attribute in attributes)
-    {{ attribute.name }}: vine.{{ attribute.vineType }}().optional(),
-    @end
+    {{{ updateSchema }}}
   })
 )

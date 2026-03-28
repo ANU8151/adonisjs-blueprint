@@ -7,7 +7,7 @@
 {{{ relationshipsImports }}}
 
 {{{ modelSignature }}}
-  {{{ attributes }}}
+  {{{ attributesLines }}}
 
   {{{ relationshipsLines }}}
 }

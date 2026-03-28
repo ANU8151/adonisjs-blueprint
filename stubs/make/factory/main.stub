@@ -5,21 +5,13 @@
 }}}
 import {{ entity.className }} from '#models/{{ entity.name.toLowerCase() }}'
 import Factory from '@adonisjs/lucid/factories'
-@each(factory in factoryImports)
-import { {{ factory }} } from './{{ factory.replace('Factory', '').toLowerCase() }}_factory'
-@end
+{{{ imports }}}
 
 export const {{ entity.className }}Factory = Factory
   .define({{ entity.className }}, ({ faker }) => {
     return {
-      @each(attribute in attributes)
-      {{ attribute.name }}: faker.{{ attribute.fakerMethod }}(),
-      @end
+      {{{ attributesLines }}}
     }
   })
-  @each(rel in relationships)
-  @if(rel.type === 'hasMany' || rel.type === 'belongsToMany')
-  .relation('{{ rel.name }}', () => {{ rel.model }}Factory)
-  @end
-  @end
+  {{{ relationsLines }}}
   .build()

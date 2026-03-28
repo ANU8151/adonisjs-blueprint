@@ -51,7 +51,7 @@ export class MigrationGenerator extends BaseGenerator {
         ...entity,
         tableName: string.plural(string.snakeCase(entity.name)),
       },
-      attributes,
+      attributes: attributes.map((a) => a.migrationLine).join('\n      '),
     })
 
     // Check for Many-to-Many to generate pivot table
@@ -69,19 +69,18 @@ export class MigrationGenerator extends BaseGenerator {
     const tableName = `${models[0]}_${models[1]}`
     const entity = this.app.generators.createEntity(tableName)
 
+    const pivotAttributes = [
+      `table.integer('${models[0]}_id').unsigned().references('id').inTable('${string.plural(models[0])}').onDelete('CASCADE')`,
+      `table.integer('${models[1]}_id').unsigned().references('id').inTable('${string.plural(models[1])}').onDelete('CASCADE')`,
+    ]
+
     await this.generateStub('make/migration/main.stub', {
       entity: {
         ...entity,
         tableName,
       },
-      attributes: [
-        {
-          migrationLine: `table.integer('${models[0]}_id').unsigned().references('id').inTable('${string.plural(models[0])}').onDelete('CASCADE')`,
-        },
-        {
-          migrationLine: `table.integer('${models[1]}_id').unsigned().references('id').inTable('${string.plural(models[1])}').onDelete('CASCADE')`,
-        },
-      ],
+      attributes: pivotAttributes.map((a) => ({ migrationLine: a })),
+      attributesLines: pivotAttributes.join('\n      '),
     })
   }
 }

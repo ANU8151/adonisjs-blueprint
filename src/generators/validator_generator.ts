@@ -91,6 +91,13 @@ export class ValidatorGenerator extends BaseGenerator {
       {
         entity,
         attributes,
+        createSchema: attributes.map((a) => `${a.name}: vine.${a.vineType}`).join(',\n    '),
+        updateSchema: attributes
+          .map(
+            (a) =>
+              `${a.name}: vine.${a.vineType}${a.vineType.includes('.optional()') ? '' : '.optional()'}`
+          )
+          .join(',\n    '),
       },
       definition.stub
     )

@@ -69,6 +69,16 @@ export class FactoryGenerator extends BaseGenerator {
       attributes,
       relationships,
       factoryImports: Array.from(factoryImports),
+      imports: Array.from(factoryImports)
+        .map((f) => `import { ${f} } from './${f.replace('Factory', '').toLowerCase()}_factory'`)
+        .join('\n'),
+      attributesLines: attributes
+        .map((a) => `${a.name}: faker.${a.fakerMethod}()`)
+        .join(',\n      '),
+      relationsLines: relationships
+        .filter((r) => r.type === 'hasMany' || r.type === 'belongsToMany')
+        .map((r) => `.relation('${r.name}', () => ${r.model}Factory)`)
+        .join('\n  '),
     })
   }
 }
