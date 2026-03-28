@@ -93,7 +93,6 @@ export class ControllerGenerator extends BaseGenerator {
         const typedDef = actionDef as any
 
         // Sort keys to maintain some order (e.g., query before render)
-        // This is a bit arbitrary, but we want some consistency
         const order = [
           'auth',
           'authorize',
@@ -167,13 +166,41 @@ export class ControllerGenerator extends BaseGenerator {
       })
     }
 
+    const importsLines: string[] = []
+    imports.models.forEach((model) => {
+      importsLines.push(`import ${model} from '#models/${string.snakeCase(model)}'`)
+    })
+    imports.validators.forEach((v) => {
+      importsLines.push(`import { ${v} } from '#validators/${entity.name.toLowerCase()}'`)
+    })
+    imports.events.forEach((e) => {
+      importsLines.push(`import ${e} from '#events/${e.toLowerCase()}'`)
+    })
+    imports.policies.forEach((p) => {
+      importsLines.push(`import ${p} from '#policies/${entity.name.toLowerCase()}_policy'`)
+    })
+    imports.services.forEach((path, serviceName) => {
+      importsLines.push(`import ${serviceName} from '#services/${path}'`)
+    })
+
+    const middlewareLines =
+      middleware.length > 0
+        ? `static middleware = [\n    ${middleware.map((m: string) => `middleware.${m}()`).join(',\n    ')}\n  ]`
+        : ''
+
+    const actionLines = actions
+      .map((action) => {
+        return `async ${action.name}({ ${action.context} }: HttpContext) {\n    ${action.logic}\n  }`
+      })
+      .join('\n\n  ')
+
     await this.generateStub(
       'make/controller/main.stub',
       {
         entity,
-        actions,
-        middleware,
-        imports: {
+        actions, // Keep for tests
+        middleware, // Keep for tests
+        importsData: {
           models: Array.from(imports.models),
           validators: Array.from(imports.validators),
           events: Array.from(imports.events),
@@ -186,6 +213,9 @@ export class ControllerGenerator extends BaseGenerator {
             path,
           })),
         },
+        importsLines: importsLines.join('\n'),
+        middlewareLines,
+        actionLines,
       },
       definition.stub
     )

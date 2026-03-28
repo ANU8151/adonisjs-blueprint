@@ -4,44 +4,10 @@
   })
 }}}
 import type { HttpContext } from '@adonisjs/core/http'
-@if(imports.models)
-@each(model in imports.models)
-import {{ model }} from '#models/{{ model.toLowerCase() }}'
-@end
-@end
-@if(imports.validators)
-@each(validator in imports.validators)
-import { {{ validator }} } from '#validators/{{ entity.name.toLowerCase() }}'
-@end
-@end
-@if(imports.events)
-@each(event in imports.events)
-import {{ event }} from '#events/{{ event.toLowerCase() }}'
-@end
-@end
-@if(imports.policies)
-@each(policy in imports.policies)
-import {{ policy }} from '#policies/{{ entity.name.toLowerCase() }}_policy'
-@end
-@end
-@if(imports.services)
-@each(service in imports.services)
-import {{ service.name }} from '#services/{{ service.path }}'
-@end
-@end
+{{{ importsLines }}}
 
 export default class {{ entity.className }}Controller {
-  @if(middleware.length)
-  static middleware = [
-    @each(item in middleware)
-    middleware.{{ item }}(),
-    @end
-  ]
-  @end
+  {{{ middlewareLines }}}
 
-  @each(action in actions)
-  async {{ action.name }}({ {{ action.context }} }: HttpContext) {
-    {{ action.logic }}
-  }
-  @end
+  {{{ actionLines }}}
 }
