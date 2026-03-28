@@ -22,4 +22,11 @@ export async function configure(command: Configure) {
    * Publish config file
    */
   await codemods.makeUsingStub(stubsRoot, 'config.stub', {})
+
+  /**
+   * Register commands in adonisrc.ts
+   */
+  await codemods.updateRcFile((rcFile) => {
+    rcFile.addCommand('@anu8151/adonisjs-blueprint/commands')
+  })
 }
