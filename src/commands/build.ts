@@ -90,7 +90,11 @@ export default class BuildBlueprint extends BaseCommand {
         blueprint.controllers['Auth'] = {
           login: { render: 'auth/login' },
           register: { render: 'auth/register' },
-          store: { validate: 'email, password', auth: 'true', redirect: 'dashboard' },
+          store: {
+            validate: 'email, password',
+            service: 'Auth.login',
+            redirect: 'dashboard',
+          },
           logout: { auth: 'logout', redirect: 'login' },
         }
       }

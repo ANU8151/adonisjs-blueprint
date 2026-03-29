@@ -48,6 +48,8 @@ export class MigrationGenerator extends BaseGenerator {
       attributes.push({ migrationLine: `table.timestamp('deleted_at')` })
     }
 
+    const isUser = entity.name === 'User'
+
     await this.generateStub('make/migration/main.stub', {
       entity: {
         ...entity,
@@ -56,6 +58,11 @@ export class MigrationGenerator extends BaseGenerator {
       attributes, // Keep for tests
       attributesLines: attributes.map((a) => a.migrationLine).join('\n      '),
     })
+
+    // If it's the User model, also generate remember_me_tokens and access_tokens tables
+    if (isUser) {
+      await this.generateAuthTables()
+    }
 
     // Check for Many-to-Many to generate pivot table
     if (definition.relationships) {
@@ -85,6 +92,44 @@ export class MigrationGenerator extends BaseGenerator {
       },
       attributes: pivotAttributes.map((a) => ({ migrationLine: a })),
       attributesLines: pivotAttributes.join('\n      '),
+    })
+  }
+
+  private async generateAuthTables() {
+    // Access Tokens table
+    await this.generateStub('make/migration/main.stub', {
+      entity: {
+        name: 'AccessToken',
+        path: '',
+        tableName: 'auth_access_tokens',
+      },
+      attributesLines: [
+        "table.integer('tokenable_id').unsigned().references('id').inTable('users').onDelete('CASCADE')",
+        "table.string('type').notNullable()",
+        "table.string('name').nullable()",
+        "table.string('hash').notNullable()",
+        "table.text('abilities').notNullable()",
+        "table.timestamp('created_at')",
+        "table.timestamp('updated_at')",
+        "table.timestamp('last_used_at').nullable()",
+        "table.timestamp('expires_at').nullable()",
+      ].join('\n      '),
+    })
+
+    // Remember Me Tokens table
+    await this.generateStub('make/migration/main.stub', {
+      entity: {
+        name: 'RememberMeToken',
+        path: '',
+        tableName: 'remember_me_tokens',
+      },
+      attributesLines: [
+        "table.integer('user_id').unsigned().references('id').inTable('users').onDelete('CASCADE')",
+        "table.string('hash').notNullable()",
+        "table.timestamp('created_at')",
+        "table.timestamp('updated_at')",
+        "table.timestamp('expires_at').notNullable()",
+      ].join('\n      '),
     })
   }
 }

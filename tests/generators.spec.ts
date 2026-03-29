@@ -242,7 +242,10 @@ test.group('Generators', () => {
       attributes: { email: 'string' },
     })
     await assert.fileExists('app/models/user.ts')
-    assert.include(await fs.contents('app/models/user.ts'), 'class User extends BaseModel')
+    assert.include(
+      await fs.contents('app/models/user.ts'),
+      'class User extends compose(BaseModel, AuthFinder)'
+    )
   })
 
   test('generate migration with pivot', async ({ assert, fs }) => {

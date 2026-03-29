@@ -8,15 +8,49 @@ export class ModelGenerator extends BaseGenerator {
     const relationships: any[] = []
     const attributes: any[] = []
     const processedAttributes = new Set<string>()
+    const isUser = entity.className === 'User'
 
     // Core model imports
-    let modelImports = `import { DateTime } from 'luxon'\nimport { column } from '@adonisjs/lucid/orm'\nimport { BaseModel } from '@adonisjs/lucid/orm'\n`
+    const imports = new Set<string>([
+      "import { DateTime } from 'luxon'",
+      "import { column } from '@adonisjs/lucid/orm'",
+      "import { BaseModel } from '@adonisjs/lucid/orm'",
+    ])
+
     let modelSignature = `export default class ${entity.className} extends BaseModel {`
+
+    // Handle Auth Mixin
+    if (isUser) {
+      imports.add("import { compose } from '@adonisjs/core/helpers'")
+      imports.add("import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'")
+      imports.add("import hash from '@adonisjs/core/services/hash'")
+      imports.add(
+        "import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens_providers/db'"
+      )
+
+      const authFinder = `const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
+  uids: ['email'],
+  passwordColumnName: 'password',
+})`
+
+      // We'll inject this before the class
+      modelSignature = `${authFinder}\n\nexport default class ${entity.className} extends compose(BaseModel, AuthFinder) {`
+    }
 
     // Handle soft deletes
     if (definition.softDeletes) {
-      modelImports = `import { DateTime } from 'luxon'\nimport { column } from '@adonisjs/lucid/orm'\nimport { BaseModel } from '@adonisjs/lucid/orm'\nimport { compose } from '@adonisjs/core/helpers'\nimport { withSoftDeletes } from '@adonisjs/lucid-soft-deletes'\n`
-      modelSignature = `export default class ${entity.className} extends compose(BaseModel, withSoftDeletes) {`
+      imports.add("import { compose } from '@adonisjs/core/helpers'")
+      imports.add("import { withSoftDeletes } from '@adonisjs/lucid-soft-deletes'")
+
+      if (isUser) {
+        // Already using compose for AuthFinder
+        modelSignature = modelSignature.replace(
+          'compose(BaseModel, AuthFinder)',
+          'compose(BaseModel, AuthFinder, withSoftDeletes)'
+        )
+      } else {
+        modelSignature = `export default class ${entity.className} extends compose(BaseModel, withSoftDeletes) {`
+      }
     }
 
     // Process explicit attributes
@@ -50,6 +84,13 @@ export class ModelGenerator extends BaseGenerator {
       }
     }
 
+    // Auth specific providers
+    if (isUser) {
+      attributes.push({
+        line: `static accessTokens = DbAccessTokensProvider.forModel(User)`,
+      })
+    }
+
     // Process relationships
     if (definition.relationships) {
       for (const [relName, relValue] of Object.entries(definition.relationships)) {
@@ -67,7 +108,6 @@ export class ModelGenerator extends BaseGenerator {
           relationshipLine = `@${relType}(() => ${relatedModelName}, { pivotTable: '${pivotTable}' })\n  declare ${relName}: ${relTypeClass}<typeof ${relatedModelName}>`
         }
 
-        // Add foreign key column for belongsTo
         if (relType === 'belongsTo') {
           const foreignKey = `${string.camelCase(relName)}Id`
           if (!processedAttributes.has(foreignKey)) {
@@ -106,7 +146,7 @@ export class ModelGenerator extends BaseGenerator {
         relationships,
         relationshipsImports: relationships.map((r) => r.importLine).join('\n'),
         relationshipsLines: relationships.map((r) => r.line).join('\n\n  '),
-        modelImports,
+        modelImports: Array.from(imports).join('\n'),
         modelSignature,
       },
       definition.stub

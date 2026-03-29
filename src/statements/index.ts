@@ -246,7 +246,25 @@ statementsRegistry.register('upload', (value) => {
 })
 
 // auth
-statementsRegistry.register('auth', (_value) => {
+statementsRegistry.register('auth', (value) => {
+  if (value === 'login') {
+    return {
+      logicLines: [
+        `const user = await User.verifyCredentials(payload.email, payload.password)`,
+        `await auth.use('web').login(user)`,
+      ],
+      imports: { models: ['User'] },
+      context: ['auth'],
+    }
+  }
+
+  if (value === 'logout') {
+    return {
+      logicLines: [`await auth.use('web').logout()`],
+      context: ['auth'],
+    }
+  }
+
   return {
     logicLines: [`const user = auth.user!`],
     context: ['auth'],
