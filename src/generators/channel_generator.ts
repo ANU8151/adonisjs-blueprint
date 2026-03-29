@@ -7,9 +7,9 @@ export class ChannelGenerator extends BaseGenerator {
     let content = "import transmission from '@adonisjs/transmission/services/main'\n\n"
 
     for (const [name, definition] of Object.entries(channels)) {
-      const channelName = (definition as any).name || name.toLowerCase()
+      const channelName = (definition as any)?.name || name.toLowerCase()
       content += `transmission.authorize('${channelName}', async (user) => {\n`
-      if ((definition as any).authorized) {
+      if ((definition as any)?.authorized) {
         content += `  return !!user\n`
       } else {
         content += `  return true\n`

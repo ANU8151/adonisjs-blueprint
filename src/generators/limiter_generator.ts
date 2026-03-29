@@ -7,9 +7,9 @@ export class LimiterGenerator extends BaseGenerator {
     let content = "import { limiter } from '@adonisjs/limiter/services/main'\n\n"
 
     for (const [name, definition] of Object.entries(limiters)) {
-      const limit = (definition as any).limit || 10
-      const duration = (definition as any).duration || '1 min'
-      const blockFor = (definition as any).blockFor
+      const limit = (definition as any)?.limit || 10
+      const duration = (definition as any)?.duration || '1 min'
+      const blockFor = (definition as any)?.blockFor
         ? `.blockFor('${(definition as any).blockFor}')`
         : ''
 
