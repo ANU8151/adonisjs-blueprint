@@ -7,7 +7,14 @@
 
 @slot('main')
   <div class="container p-8">
-    <h1 class="text-3xl font-bold mb-6 capitalize">{{ folder }} {{ action }}</h1>
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold capitalize">{{ folder }} {{ action }}</h1>
+      @if(action === 'index')
+        @!link({ route: '{{ folder }}.create', text: 'Create New' })
+      @else
+        @!link({ route: '{{ folder }}.index', text: 'Go Back' })
+      @end
+    </div>
 
     @if(action === 'index')
       <div class="overflow-x-auto">
@@ -23,7 +30,8 @@
               <tr>
                 {{{ tableCells }}}
                 <td class="px-4 py-2 border-b text-left text-blue-500">
-                   {/* actions placeholder */}
+                   @!link({ route: '{{ folder }}.show', routeParams: { id: item.id }, text: 'View' })
+                   @!link({ route: '{{ folder }}.edit', routeParams: { id: item.id }, text: 'Edit' })
                 </td>
               </tr>
             @end
@@ -31,13 +39,14 @@
         </table>
       </div>
     @elseif(action === 'create' || action === 'edit')
-      <form action="{{ '{{' }} route('{{ folder }}.store') {{ '}}' }}" method="POST" class="max-w-lg">
-        \{{ csrfField() }}
+      {{{ formComponent }}}
         {{{ formFields }}}
-        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-          Save
-        </button>
-      </form>
+        <div class="mt-6">
+          <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+            Save
+          </button>
+        </div>
+      @end
     @else
       <div class="bg-white shadow rounded-lg p-6">
         {{{ showFields }}}

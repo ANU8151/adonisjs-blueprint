@@ -4,15 +4,24 @@
   })
 }}}
 import { Head } from '@inertiajs/react'
+import { Form, Link } from '@adonisjs/inertia/react'
 
 export default function {{ entity.className }}(props: any) {
   const singularName = '{{ entity.name.toLowerCase() }}'
-  const pluralName = '{{ entity.name.toLowerCase() }}s'
+  const pluralName = '{{ folder || entity.name.toLowerCase() + "s" }}'
 
   return (
     <div className="container p-8">
       <Head title="{{ entity.className }} {{ action }}" />
-      <h1 className="text-3xl font-bold mb-6 capitalize">{{ entity.className }} {{ action }}</h1>
+      
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold capitalize">{{ entity.className }} {{ action }}</h1>
+        {action === 'index' ? (
+          <Link route={`${pluralName}.create`}>Create New</Link>
+        ) : (
+          <Link route={`${pluralName}.index`}>Go Back</Link>
+        )}
+      </div>
 
       @if(action === 'index')
       <div className="overflow-x-auto">
@@ -27,8 +36,9 @@ export default function {{ entity.className }}(props: any) {
             {props[pluralName]?.map((item: any) => (
               <tr key={item.id}>
                 {{{ tableCells }}}
-                <td className="px-4 py-2 border-b text-left text-blue-500">
-                   {/* actions placeholder */}
+                <td className="px-4 py-2 border-b text-left space-x-2">
+                   <Link route={`${pluralName}.show`} routeParams={ { id: item.id } } className="text-blue-500">View</Link>
+                   <Link route={`${pluralName}.edit`} routeParams={ { id: item.id } } className="text-blue-500">Edit</Link>
                 </td>
               </tr>
             ))}
@@ -36,12 +46,20 @@ export default function {{ entity.className }}(props: any) {
         </table>
       </div>
       @elseif(action === 'create' || action === 'edit')
-      <form className="max-w-lg">
-        {{{ formFields }}}
-        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-          Save
-        </button>
-      </form>
+      <div className="max-w-lg">
+        {{{ formComponent }}}
+          {({ errors }) => (
+            <>
+              {{{ formFields }}}
+              <div className="mt-6">
+                <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                  Save
+                </button>
+              </div>
+            </>
+          )}
+        </Form>
+      </div>
       @else
       <div className="bg-white shadow rounded-lg p-6">
         {{{ showFields }}}

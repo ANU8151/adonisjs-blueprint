@@ -5,14 +5,23 @@
 }}}
 <script lang="ts">
   import { Head } from '@inertiajs/svelte'
+  import { Form, Link } from '@adonisjs/inertia/svelte'
   
   export let {{ entity.name.toLowerCase() }} = null;
-  export let {{ entity.name.toLowerCase() }}s = [];
+  export let {{ folder || entity.name.toLowerCase() + 's' }} = [];
 </script>
 
 <div class="container p-8">
   <Head title="{{ entity.className }} {{ action }}" />
-  <h1 class="text-3xl font-bold mb-6 capitalize">{{ folder }} {{ action }}</h1>
+  
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold capitalize">{{ folder }} {{ action }}</h1>
+    {#if action === 'index'}
+      <Link route="{{ folder }}.create" class="text-blue-500">Create New</Link>
+    {:else}
+      <Link route="{{ folder }}.index" class="text-blue-500">Go Back</Link>
+    {/if}
+  </div>
 
   {#if action === 'index'}
     <div class="overflow-x-auto">
@@ -24,11 +33,12 @@
           </tr>
         </thead>
         <tbody>
-          {#each {{ entity.name.toLowerCase() }}s as item}
+          {#each {{ folder || entity.name.toLowerCase() + 's' }} as item}
             <tr>
               {{{ tableCells }}}
-              <td class="px-4 py-2 border-b text-left text-blue-500">
-                 {/* actions placeholder */}
+              <td class="px-4 py-2 border-b text-left space-x-2">
+                 <Link route="{{ folder }}.show" routeParams={ { id: item.id } } class="text-blue-500">View</Link>
+                 <Link route="{{ folder }}.edit" routeParams={ { id: item.id } } class="text-blue-500">Edit</Link>
               </td>
             </tr>
           {/each}
@@ -36,12 +46,18 @@
       </table>
     </div>
   {:else if action === 'create' || action === 'edit'}
-    <form class="max-w-lg">
-      {{{ formFields }}}
-      <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-        Save
-      </button>
-    </form>
+    <div class="max-w-lg">
+      {{{ formComponent }}}
+        <div let:errors>
+          {{{ formFields }}}
+          <div class="mt-6">
+            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+              Save
+            </button>
+          </div>
+        </div>
+      </Form>
+    </div>
   {:else}
     <div class="bg-white shadow rounded-lg p-6">
       {{{ showFields }}}
