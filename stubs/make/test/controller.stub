@@ -4,10 +4,21 @@
   })
 }}}
 import { test } from '@japa/runner'
+import testUtils from '@adonisjs/core/services/test_utils'
 @if(hasAuth)
+import hash from '@adonisjs/core/services/hash'
 import User from '#models/user'
 @end
 
-test.group('{{ entity.className }} Controller', () => {
+test.group('{{ entity.className }} Controller', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+  
+  @if(hasAuth)
+  group.each.setup(() => {
+    hash.fake()
+    return () => hash.restore()
+  })
+  @end
+
   {{{ testLines }}}
 })
