@@ -18,6 +18,7 @@ A professional-grade code generator for AdonisJS 7 inspired by [Laravel Blueprin
 - **Validators & Factories**: Creates advanced **VineJS** validators and Faker-powered factories.
 - **Real-time Communication**: Integrated **AdonisJS Transmission** support—generates channels and authorization logic.
 - **Infrastructure**: Generates **Smart Seeders**, Events, Mails, Jobs, Notifications, and **Japa** functional tests.
+- **Security**: Built-in support for **Rate Limiting** (limiters and throttle statement) and secure file uploads.
 - **OpenAPI Documentation**: Automatically generates full Swagger/OpenAPI 3.0 specs with request/response schemas.
 - **Reverse Engineering**: Trace your existing database to generate a `draft.yaml` automatically.
 
@@ -81,6 +82,15 @@ models:
 controllers:
   Post:
     resource: true
+    store:
+      throttle: global
+      validate: 'title, content'
+      save: true
+
+limiters:
+  global:
+    limit: 10
+    duration: 1 min
 
 channels:
   Chat:
@@ -122,6 +132,7 @@ Blueprint supports several "smart" statements in your controller actions:
 - `fire: EventName`: Generates an Event class and `emitter.emit()` call.
 - `send: MailName`: Generates a Mail class and `mail.sendLater()` call.
 - `notify: target, NotificationName`: Generates a Notification class and `target.notify()` call.
+- `throttle: limiterName`: Applies a rate limiter to the action.
 - `dispatch: JobName`: Generates a Job class and handles execution.
 - `render: view with: data`: Generates the view (Edge/Inertia/JSON) and passes data.
 - `service: ServiceName.method`: Generates a Service class and calls the specified method.

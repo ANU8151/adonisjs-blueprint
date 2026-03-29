@@ -16,6 +16,7 @@ import { MiddlewareGenerator } from '../generators/middleware_generator.js'
 import { OpenAPIGenerator } from '../generators/openapi_generator.js'
 import { ChannelGenerator } from '../generators/channel_generator.js'
 import { TransformerGenerator } from '../generators/transformer_generator.js'
+import { LimiterGenerator } from '../generators/limiter_generator.js'
 import string from '@adonisjs/core/helpers/string'
 
 export default class BuildBlueprint extends BaseCommand {
@@ -274,6 +275,11 @@ export default class BuildBlueprint extends BaseCommand {
     if (blueprint.channels) {
       const channelGenerator = new ChannelGenerator(this.app, this.logger, this.manifest)
       await channelGenerator.generate('', blueprint.channels)
+    }
+
+    if (blueprint.limiters) {
+      const limiterGenerator = new LimiterGenerator(this.app, this.logger, this.manifest)
+      await limiterGenerator.generate('', blueprint.limiters)
     }
 
     if (blueprint.settings?.api) {

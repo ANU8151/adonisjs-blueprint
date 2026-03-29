@@ -50,4 +50,5 @@ export interface BlueprintSchema {
   models?: Record<string, any>
   controllers?: Record<string, any>
   channels?: Record<string, any>
+  limiters?: Record<string, any>
 }

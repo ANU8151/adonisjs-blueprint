@@ -96,6 +96,18 @@
           "authorized": { "type": "boolean", "description": "Whether authorization is required" }
         }
       }
+    },
+    "limiters": {
+      "type": "object",
+      "description": "Define your rate limiters",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "limit": { "type": "integer" },
+          "duration": { "type": "string" },
+          "blockFor": { "type": "string" }
+        }
+      }
     }
   }
 }

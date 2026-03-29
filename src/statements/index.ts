@@ -313,6 +313,14 @@ statementsRegistry.register('flash', (value) => {
   }
 })
 
+// throttle
+statementsRegistry.register('throttle', (value) => {
+  return {
+    logicLines: [`await throttle.${value}()`],
+    context: ['throttle'],
+  }
+})
+
 // service
 statementsRegistry.register('service', async (value, { generators }) => {
   const parts = (value as string).split('.')
