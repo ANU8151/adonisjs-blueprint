@@ -230,6 +230,8 @@ export class ControllerGenerator extends BaseGenerator {
       {
         entity,
         injectLine,
+        actions, // Keep for tests
+        middleware, // Keep for tests
         importsData: {
           models: Array.from(imports.models),
           validators: Array.from(imports.validators),
