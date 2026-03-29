@@ -17,9 +17,9 @@ export default function {{ entity.className }}(props: any) {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold capitalize">{{ entity.className }} {{ action }}</h1>
         {action === 'index' ? (
-          <Link route={`${pluralName}.create`}>Create New</Link>
+          <Link route={pluralName + ".create"}>Create New</Link>
         ) : (
-          <Link route={`${pluralName}.index`}>Go Back</Link>
+          <Link route={pluralName + ".index"}>Go Back</Link>
         )}
       </div>
 
@@ -37,8 +37,8 @@ export default function {{ entity.className }}(props: any) {
               <tr key={item.id}>
                 {{{ tableCells }}}
                 <td className="px-4 py-2 border-b text-left space-x-2">
-                   <Link route={`${pluralName}.show`} routeParams={ { id: item.id } } className="text-blue-500">View</Link>
-                   <Link route={`${pluralName}.edit`} routeParams={ { id: item.id } } className="text-blue-500">Edit</Link>
+                   <Link route={pluralName + ".show"} routeParams={ { id: item.id } } className="text-blue-500">View</Link>
+                   <Link route={pluralName + ".edit"} routeParams={ { id: item.id } } className="text-blue-500">Edit</Link>
                 </td>
               </tr>
             ))}
