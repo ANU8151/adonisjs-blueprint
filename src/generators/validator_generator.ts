@@ -22,6 +22,10 @@ export class ValidatorGenerator extends BaseGenerator {
             vineType = 'date()'
           } else if (baseType === 'email') {
             vineType = 'string().email()'
+          } else if (baseType === 'file' || baseType === 'image') {
+            const extnames =
+              baseType === 'image' ? "['jpg', 'png', 'jpeg']" : "['pdf', 'doc', 'docx']"
+            vineType = `file({ size: '2mb', extnames: ${extnames} })`
           }
 
           // Apply unique rule with table and column

@@ -218,7 +218,8 @@ statementsRegistry.register('upload', (value) => {
   return {
     logicLines: [
       `const ${field}File = request.file('${field}', { size: '${size}', extnames: ${extnames} })!`,
-      `await ${field}File.moveToDisk(''${disk})`,
+      `const ${field}FileName = \`\${string.random(32)}.\${\${field}File.extname}\``,
+      `await ${field}File.moveToDisk(''${disk}, { name: ${field}FileName })`,
     ],
   }
 })

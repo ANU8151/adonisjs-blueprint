@@ -396,7 +396,7 @@ test.group('Generators', () => {
     const content = await fs.contents('start/routes.ts')
     assert.include(
       content,
-      "router.resource('posts', () => import('#controllers/post_controller')).apiOnly().use('*', [middleware.auth()])"
+      "router.resource('posts', () => import('#controllers/post_controller')).apiOnly().use('*', [middleware.auth()]).where('id', router.matchers.number())"
     )
   })
 

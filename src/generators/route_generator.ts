@@ -31,7 +31,10 @@ export class RouteGenerator extends BaseGenerator {
       return
     }
 
-    let routeLine = `router.resource('${fullResourcePath}', () => import('#controllers/${controllerPath}_controller'))`
+    // Prepare controller reference for lazy loading
+    const controllerReference = `() => import('#controllers/${controllerPath}_controller')`
+    let routeLine = `router.resource('${fullResourcePath}', ${controllerReference})`
+
     if (isApi) {
       routeLine += '.apiOnly()'
     }
@@ -40,6 +43,9 @@ export class RouteGenerator extends BaseGenerator {
       const mw = definition.middleware.map((m: string) => `middleware.${m}()`).join(', ')
       routeLine += `.use('*', [${mw}])`
     }
+
+    // Add param matchers at the end
+    routeLine += ".where('id', router.matchers.number())"
 
     if (nameParts.length > 0) {
       const prefix = nameParts.map((p) => p.toLowerCase()).join('/')

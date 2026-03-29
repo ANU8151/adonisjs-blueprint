@@ -6,6 +6,9 @@
 import type { HttpContext } from '@adonisjs/core/http'
 {{{ importsLines }}}
 
+@if(importsData.services.length > 0)
+@inject()
+@end
 export default class {{ entity.className }}Controller {
   {{{ middlewareLines }}}
 

@@ -175,6 +175,9 @@ export class ControllerGenerator extends BaseGenerator {
     }
 
     const importsLines: string[] = []
+    if (imports.services.size > 0) {
+      importsLines.push("import { inject } from '@adonisjs/core'")
+    }
     imports.models.forEach((model) => {
       if (model) importsLines.push(`import ${model} from '#models/${string.snakeCase(model)}'`)
     })
