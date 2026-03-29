@@ -4,11 +4,19 @@ import string from '@adonisjs/core/helpers/string'
 
 export class TransformerGenerator extends BaseGenerator {
   async generate(name: string, definition: any) {
-    const entity = this.app.generators.createEntity(name) as Entity
-    const attributes: string[] = []
+    const nameParts = name.split(/[\/.]/)
+    const baseName = nameParts.pop() || ''
+    const entity = this.app.generators.createEntity(baseName) as Entity
+    if (!entity.className) {
+      entity.className = string.pascalCase(baseName)
+    }
+    if (nameParts.length > 0) {
+      entity.path = nameParts.map((p) => string.snakeCase(p || '')).join('/')
+    }
 
+    const attributes: string[] = []
     if (definition.attributes) {
-      attributes.push(...Object.keys(definition.attributes))
+      attributes.push(...Object.keys(definition.attributes).filter((k) => k !== 'relationships'))
     }
 
     const attributesLines = attributes.map((a) => `'${a}'`).join(', ')

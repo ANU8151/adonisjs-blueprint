@@ -3,12 +3,9 @@
     to: app.makePath('app/controllers', entity.path, entity.name.toLowerCase() + '_controller.ts')
   })
 }}}
-import type { HttpContext } from '@adonisjs/core/http'
 {{{ importsLines }}}
 
-@if(importsData.services.length > 0)
-@inject()
-@end
+{{{ injectLine }}}
 export default class {{ entity.className }}Controller {
   {{{ middlewareLines }}}
 

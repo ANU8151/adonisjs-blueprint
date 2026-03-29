@@ -4,27 +4,37 @@ import string from '@adonisjs/core/helpers/string'
 
 export class ModelGenerator extends BaseGenerator {
   async generate(name: string, definition: any) {
-    const entity = this.app.generators.createEntity(name) as Entity
+    const nameParts = name.split(/[\/.]/)
+    const baseName = nameParts.pop() || ''
+    const entity = this.app.generators.createEntity(baseName) as Entity
+    if (!entity.className) {
+      entity.className = string.pascalCase(baseName)
+    }
+    if (nameParts.length > 0) {
+      entity.path = nameParts.map((p) => string.snakeCase(p || '')).join('/')
+    }
+
     const relationships: any[] = []
     const attributes: any[] = []
     const processedAttributes = new Set<string>()
     const isUser = entity.className === 'User'
 
     // Core model imports
-    const imports = new Set<string>([
+    const coreImports = new Set<string>([
       "import { DateTime } from 'luxon'",
-      "import { column } from '@adonisjs/lucid/orm'",
-      "import { BaseModel } from '@adonisjs/lucid/orm'",
+      "import { column, BaseModel } from '@adonisjs/lucid/orm'",
     ])
+
+    const relationImports = new Set<string>()
 
     let modelSignature = `export default class ${entity.className} extends BaseModel {`
 
     // Handle Auth Mixin
     if (isUser) {
-      imports.add("import { compose } from '@adonisjs/core/helpers'")
-      imports.add("import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'")
-      imports.add("import hash from '@adonisjs/core/services/hash'")
-      imports.add(
+      coreImports.add("import { compose } from '@adonisjs/core/helpers'")
+      coreImports.add("import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'")
+      coreImports.add("import hash from '@adonisjs/core/services/hash'")
+      coreImports.add(
         "import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens_providers/db'"
       )
 
@@ -39,8 +49,8 @@ export class ModelGenerator extends BaseGenerator {
 
     // Handle soft deletes
     if (definition.softDeletes) {
-      imports.add("import { compose } from '@adonisjs/core/helpers'")
-      imports.add("import { withSoftDeletes } from '@adonisjs/lucid-soft-deletes'")
+      coreImports.add("import { compose } from '@adonisjs/core/helpers'")
+      coreImports.add("import { withSoftDeletes } from '@adonisjs/lucid-soft-deletes'")
 
       if (isUser) {
         // Already using compose for AuthFinder
@@ -72,7 +82,7 @@ export class ModelGenerator extends BaseGenerator {
           tsType = 'boolean'
         } else if (baseType === 'timestamp' || baseType === 'datetime') {
           tsType = 'DateTime'
-          columnDecorator = '@column.dateTime({ autoCreate: true, autoUpdate: true })'
+          columnDecorator = '@column.dateTime()'
         } else if (baseType === 'enum') {
           tsType = 'any'
         }
@@ -118,8 +128,15 @@ export class ModelGenerator extends BaseGenerator {
           }
         }
 
+        relationImports.add(`import { ${relType} } from '@adonisjs/lucid/orm'`)
+        relationImports.add(
+          `import type { ${relTypeClass} } from '@adonisjs/lucid/types/relations'`
+        )
+        relationImports.add(
+          `import ${relatedModelName} from '#models/${string.snakeCase(relatedModelName || '')}'`
+        )
+
         relationships.push({
-          importLine: `import { ${relType} } from '@adonisjs/lucid/orm'\nimport type { ${relTypeClass} } from '@adonisjs/lucid/types/relations'\nimport ${relatedModelName} from '#models/${string.snakeCase(relatedModelName || '')}'`,
           line: relationshipLine,
         })
       }
@@ -144,9 +161,9 @@ export class ModelGenerator extends BaseGenerator {
         attributes,
         attributesLines: attributes.map((a) => a.line).join('\n\n  '),
         relationships,
-        relationshipsImports: relationships.map((r) => r.importLine).join('\n'),
+        relationshipsImports: Array.from(relationImports).join('\n'),
         relationshipsLines: relationships.map((r) => r.line).join('\n\n  '),
-        modelImports: Array.from(imports).join('\n'),
+        modelImports: Array.from(coreImports).join('\n'),
         modelSignature,
       },
       definition.stub

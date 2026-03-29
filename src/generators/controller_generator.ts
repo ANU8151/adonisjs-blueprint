@@ -179,24 +179,29 @@ export class ControllerGenerator extends BaseGenerator {
       })
     }
 
-    const importsLines: string[] = []
+    const importsLines: string[] = ["import type { HttpContext } from '@adonisjs/core/http'"]
+    let injectLine = ''
+
     if (imports.services.size > 0) {
       importsLines.push("import { inject } from '@adonisjs/core'")
+      injectLine = '@inject()'
     }
     imports.models.forEach((model) => {
       if (model) importsLines.push(`import ${model} from '#models/${string.snakeCase(model)}'`)
     })
     imports.validators.forEach((v) => {
       if (v)
-        importsLines.push(`import { ${v} } from '#validators/${(entity.name || '').toLowerCase()}'`)
+        importsLines.push(
+          `import { ${v} } from '#validators/${string.snakeCase(entity.name || '').toLowerCase()}'`
+        )
     })
     imports.events.forEach((e) => {
-      if (e) importsLines.push(`import ${e} from '#events/${e.toLowerCase()}'`)
+      if (e) importsLines.push(`import ${e} from '#events/${string.snakeCase(e).toLowerCase()}'`)
     })
     imports.policies.forEach((p) => {
       if (p)
         importsLines.push(
-          `import ${p} from '#policies/${(entity.name || '').toLowerCase()}_policy'`
+          `import ${p} from '#policies/${string.snakeCase(entity.name || '').toLowerCase()}_policy'`
         )
     })
     imports.services.forEach((path, serviceName) => {
@@ -224,8 +229,7 @@ export class ControllerGenerator extends BaseGenerator {
       'make/controller/main.stub',
       {
         entity,
-        actions, // Keep for tests
-        middleware, // Keep for tests
+        injectLine,
         importsData: {
           models: Array.from(imports.models),
           validators: Array.from(imports.validators),

@@ -12,18 +12,61 @@ export class MigrationGenerator extends BaseGenerator {
       for (const [attrName, attrType] of Object.entries(definition.attributes)) {
         let migrationLine = ''
         if (typeof attrType === 'string') {
-          if (attrType === 'foreign') {
+          const parts = attrType.split(':')
+          const type = parts[0]
+          const modifiers = parts.slice(1)
+
+          if (type === 'foreign') {
             migrationLine = `table.integer('${attrName}').unsigned().references('id').inTable('${string.plural(attrName.replace('_id', '') || '')}')`
-          } else if (attrType.startsWith('enum:')) {
-            const values =
-              attrType
-                .split(':')[1]
-                ?.split(',')
-                .map((v) => `'${v.trim()}'`)
-                .join(', ') || ''
+          } else if (type === 'enum') {
+            const values = modifiers
+              .join(',')
+              .split(',')
+              .map((v) => `'${v.trim()}'`)
+              .join(', ')
             migrationLine = `table.enum('${attrName}', [${values}])`
           } else {
-            migrationLine = `table.${attrType}('${attrName}')`
+            // Mapping for common types
+            const typeMapping: Record<string, string> = {
+              datetime: 'dateTime',
+              timestamp: 'timestamp',
+              text: 'text',
+              string: 'string',
+              integer: 'integer',
+              boolean: 'boolean',
+              float: 'float',
+              double: 'double',
+              decimal: 'decimal',
+              date: 'date',
+              time: 'time',
+              json: 'json',
+              jsonb: 'jsonb',
+              uuid: 'uuid',
+            }
+
+            const knexType = typeMapping[type] || type
+            migrationLine = `table.${knexType}('${attrName}')`
+
+            // Add modifiers
+            if (modifiers.includes('unique')) migrationLine += '.unique()'
+            if (modifiers.includes('nullable') || modifiers.includes('optional')) {
+              migrationLine += '.nullable()'
+            } else {
+              migrationLine += '.notNullable()'
+            }
+            if (modifiers.includes('unsigned')) migrationLine += '.unsigned()'
+
+            // Handle references:categories.id
+            const refIdx = modifiers.findIndex((m) => m.startsWith('references:'))
+            if (refIdx !== -1) {
+              const refParts = modifiers[refIdx].split(':')
+              if (refParts[1]) {
+                const tableAndColumn = refParts[1].split('.')
+                const table = tableAndColumn[0]
+                const column = tableAndColumn[1] || 'id'
+                migrationLine += `.references('${column}').inTable('${table}').onDelete('CASCADE')`
+              }
+            }
           }
         }
         attributes.push({ migrationLine })

@@ -4,7 +4,16 @@ import string from '@adonisjs/core/helpers/string'
 
 export class PolicyGenerator extends BaseGenerator {
   async generate(name: string, definition: any) {
-    const entity = this.app.generators.createEntity(name) as Entity
+    const nameParts = name.split(/[\/.]/)
+    const baseName = nameParts.pop() || ''
+    const entity = this.app.generators.createEntity(baseName) as Entity
+    if (!entity.className) {
+      entity.className = string.pascalCase(baseName)
+    }
+    if (nameParts.length > 0) {
+      entity.path = nameParts.map((p) => string.snakeCase(p || '')).join('/')
+    }
+
     const actions: any[] = []
 
     for (const [actionName, actionDef] of Object.entries(definition)) {
@@ -26,9 +35,9 @@ export class PolicyGenerator extends BaseGenerator {
 
     const actionLines = actions
       .map((action) => {
-        return `${action.name}(user: User, ${action.variableName}: ${action.modelName}): AuthorizerResponse {\n    return true\n  }`
+        return `  ${action.name}(user: User, ${action.variableName}: ${action.modelName}): AuthorizerResponse {\n    return true\n  }`
       })
-      .join('\n\n  ')
+      .join('\n\n')
 
     await this.generateStub('make/policy/main.stub', {
       entity,

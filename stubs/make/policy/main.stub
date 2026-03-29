@@ -9,5 +9,5 @@ import { BasePolicy } from '@adonisjs/bouncer'
 import { AuthorizerResponse } from '@adonisjs/bouncer/types'
 
 export default class {{ entity.className }}Policy extends BasePolicy {
-  {{{ actionLines }}}
+{{{ actionLines }}}
 }
