@@ -15,6 +15,7 @@ import { EnumGenerator } from '../generators/enum_generator.js'
 import { MiddlewareGenerator } from '../generators/middleware_generator.js'
 import { OpenAPIGenerator } from '../generators/openapi_generator.js'
 import { ChannelGenerator } from '../generators/channel_generator.js'
+import { TransformerGenerator } from '../generators/transformer_generator.js'
 import string from '@adonisjs/core/helpers/string'
 
 export default class BuildBlueprint extends BaseCommand {
@@ -151,6 +152,13 @@ export default class BuildBlueprint extends BaseCommand {
         undefined,
         forceOverwrite
       )
+      const transformerGenerator = new TransformerGenerator(
+        this.app,
+        this.logger,
+        this.manifest,
+        undefined,
+        forceOverwrite
+      )
 
       for (const [name, definition] of Object.entries(blueprint.models)) {
         this.logger.info(`Generating model, migration, validator, factory and seeder for ${name}`)
@@ -159,6 +167,7 @@ export default class BuildBlueprint extends BaseCommand {
         await validatorGenerator.generate(name, definition)
         await factoryGenerator.generate(name, definition)
         await seederGenerator.generate(name, definition)
+        await transformerGenerator.generate(name, definition)
 
         // Generate Enums if present
         if ((definition as any).attributes) {

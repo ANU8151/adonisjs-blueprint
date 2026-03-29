@@ -41,6 +41,7 @@ export class ControllerGenerator extends BaseGenerator {
       jobs: new Set<string>(),
       notifications: new Set<string>(),
       services: new Map<string, string>(),
+      transformers: new Set<string>(),
     }
 
     const middleware = definition.middleware || []
@@ -154,9 +155,13 @@ export class ControllerGenerator extends BaseGenerator {
               if (result.imports.services)
                 result.imports.services.forEach((serviceName: string) => {
                   if (serviceName) {
-                    const servicePath =
-                      string.snakeCase(serviceName.replace('Service', '')) + '_service'
-                    imports.services.set(serviceName, servicePath)
+                    if (serviceName.endsWith('Transformer')) {
+                      imports.transformers.add(serviceName)
+                    } else {
+                      const servicePath =
+                        string.snakeCase(serviceName.replace('Service', '')) + '_service'
+                      imports.services.set(serviceName, servicePath)
+                    }
                   }
                 })
             }
@@ -196,6 +201,12 @@ export class ControllerGenerator extends BaseGenerator {
     })
     imports.services.forEach((path, serviceName) => {
       if (serviceName && path) importsLines.push(`import ${serviceName} from '#services/${path}'`)
+    })
+    imports.transformers.forEach((t) => {
+      if (t)
+        importsLines.push(
+          `import ${t} from '#transformers/${string.snakeCase(t.replace('Transformer', ''))}_transformer'`
+        )
     })
 
     const middlewareLines =

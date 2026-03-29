@@ -1,0 +1,17 @@
+{{{
+  exports({
+    to: app.makePath('app/transformers', entity.path, entity.name.toLowerCase() + '_transformer.ts')
+  })
+}}}
+import { BaseTransformer } from '@adonisjs/core/transformers'
+import {{ entity.className }} from '#models/{{ entity.name.toLowerCase() }}'
+{{{ importLines }}}
+
+export default class {{ entity.className }}Transformer extends BaseTransformer<{{ entity.className }}> {
+  async toObject() {
+    return {
+      ...this.pick(this.resource, [{{{ attributes }}}]),
+      {{{ relationLines }}}
+    }
+  }
+}

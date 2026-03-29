@@ -2,7 +2,7 @@ import { statementsRegistry } from '../statements_registry.js'
 import string from '@adonisjs/core/helpers/string'
 
 // query
-statementsRegistry.register('query', (value, { entity, pluralName, singularName }) => {
+statementsRegistry.register('query', (value, { entity, pluralName, singularName, useInertia }) => {
   const parts = (value as string).split(',').map((p) => p.trim())
   const queryPart = parts[0]
   const preloads: string[] = []
@@ -24,6 +24,7 @@ statementsRegistry.register('query', (value, { entity, pluralName, singularName 
   const variableName = queryType === 'all' || queryType === 'paginate' ? pluralName : singularName
   const logicLines: string[] = []
   const context: string[] = []
+  const transformerName = `${entity.className}Transformer`
 
   let queryChain = `${entity.className}.query()`
   for (const relation of preloads) {
@@ -33,22 +34,42 @@ statementsRegistry.register('query', (value, { entity, pluralName, singularName 
   }
 
   if (queryType === 'all') {
-    logicLines.push(`const ${variableName} = await ${queryChain}`)
+    if (useInertia) {
+      logicLines.push(`const models = await ${queryChain}`)
+      logicLines.push(`const ${variableName} = ${transformerName}.transform(models)`)
+    } else {
+      logicLines.push(`const ${variableName} = await ${queryChain}`)
+    }
   } else if (queryType === 'paginate') {
     const limit = queryParts[1] || '20'
-    logicLines.push(
-      `const ${variableName} = await ${queryChain}.paginate(request.input('page', 1), ${limit})`
-    )
+    if (useInertia) {
+      logicLines.push(
+        `const results = await ${queryChain}.paginate(request.input('page', 1), ${limit})`
+      )
+      logicLines.push(`const ${variableName} = ${transformerName}.paginate(results)`)
+    } else {
+      logicLines.push(
+        `const ${variableName} = await ${queryChain}.paginate(request.input('page', 1), ${limit})`
+      )
+    }
   } else if (queryType === 'find') {
-    logicLines.push(
-      `const ${variableName} = await ${queryChain}.where('id', params.id).firstOrFail()`
-    )
+    if (useInertia) {
+      logicLines.push(`const model = await ${queryChain}.where('id', params.id).firstOrFail()`)
+      logicLines.push(`const ${variableName} = ${transformerName}.transform(model)`)
+    } else {
+      logicLines.push(
+        `const ${variableName} = await ${queryChain}.where('id', params.id).firstOrFail()`
+      )
+    }
     context.push('params')
   }
 
   return {
     logicLines,
-    imports: { models: [entity.className] },
+    imports: {
+      models: [entity.className],
+      services: useInertia ? [transformerName] : [],
+    },
     context,
   }
 })

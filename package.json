@@ -1,7 +1,7 @@
 {
   "name": "@anu8151/adonisjs-blueprint",
   "description": "Blueprint for AdonisJS 7",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "engines": {
     "node": ">=24.0.0"
   },
