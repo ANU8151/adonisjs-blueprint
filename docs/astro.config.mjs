@@ -16,11 +16,16 @@ export default defineConfig({
 					label: 'Guides',
 					items: [
 						{ label: 'Getting Started', link: 'getting-started' },
+						{ label: 'Inertia Integration', link: 'reference/inertia' },
 					],
 				},
 				{
 					label: 'Reference',
 					autogenerate: { directory: 'reference' },
+				},
+				{
+					label: 'Cookbook',
+					autogenerate: { directory: 'cookbook' },
 				},
 			],
 		}),
