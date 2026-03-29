@@ -1,0 +1,34 @@
+---
+title: AdonisJS Blueprint
+description: Rapidly scaffold your entire AdonisJS 7 application from a single YAML file.
+template: splash
+hero:
+  tagline: Professional-grade code generator inspired by Laravel Blueprint.
+  actions:
+    - text: Get Started
+      link: /adonisjs-blueprint/getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/ANU8151/adonisjs-blueprint
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Next steps
+
+<CardGrid stagger>
+	<Card title="API-First Mode" icon="setting">
+		Switch between MVC, InertiaJS, or pure JSON APIs with a single setting.
+	</Card>
+	<Card title="Smart Shorthands" icon="pencil">
+		Define migration modifiers like `string:unique:min:10` directly in YAML.
+	</Card>
+	<Card title="Side-Effects" icon="rocket">
+		Generates Events, Mails, Jobs, and Notifications classes and logic.
+	</Card>
+	<Card title="Built-in Documentation" icon="open-book">
+		Automatically generates full OpenAPI 3.0 specs (Swagger).
+	</Card>
+</CardGrid>
