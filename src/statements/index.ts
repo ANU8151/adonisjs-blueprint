@@ -164,7 +164,7 @@ statementsRegistry.register('delete', (_value, { entity, models }) => {
   return {
     logicLines: [
       `const model = await ${entity.className}.findOrFail(params.id)`,
-      `await model.${isSoftDelete ? 'delete()' : 'delete()'}`, // In Lucid, delete() works for both if withSoftDeletes is used
+      `await model.${isSoftDelete ? 'delete()' : 'delete()'}`,
     ],
     imports: { models: [entity.className] },
     context: ['params'],
@@ -176,9 +176,8 @@ statementsRegistry.register('fire', async (value, { generators }) => {
   const eventName = value as string
   await generators.event.generate(eventName)
   return {
-    logicLines: [`emitter.emit(new ${eventName}(payload))`],
+    logicLines: [`await ${eventName}.dispatch(payload)`],
     imports: { events: [eventName] },
-    context: ['emitter'],
   }
 })
 
@@ -187,9 +186,8 @@ statementsRegistry.register('send', async (value, { generators }) => {
   const mailName = value as string
   await generators.mail.generate(mailName)
   return {
-    logicLines: [`await mail.sendLater(new ${mailName}(payload))`],
+    logicLines: [`await ${mailName}.send(payload)`],
     imports: { mails: [mailName] },
-    context: ['mail'],
   }
 })
 
@@ -198,7 +196,7 @@ statementsRegistry.register('dispatch', async (value, { generators }) => {
   const jobName = value as string
   await generators.job.generate(jobName)
   return {
-    logicLines: [`await new ${jobName}(payload).handle()`],
+    logicLines: [`await ${jobName}.dispatch(payload)`],
     imports: { jobs: [jobName] },
   }
 })
@@ -318,6 +316,18 @@ statementsRegistry.register('throttle', (value) => {
   return {
     logicLines: [`await throttle.${value}()`],
     context: ['throttle'],
+  }
+})
+
+// cache
+statementsRegistry.register('cache', (value) => {
+  const parts = (value as string).split(',').map((p) => p.trim())
+  const key = parts[0]
+  const ttl = parts[1] || '1h'
+
+  return {
+    logicLines: [`const cachedData = await cache.getOrSet('${key}', () => data, '${ttl}')`],
+    context: ['cache'],
   }
 })
 
