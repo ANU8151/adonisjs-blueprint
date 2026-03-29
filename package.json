@@ -1,7 +1,7 @@
 {
   "name": "@anu8151/adonisjs-blueprint",
   "description": "Blueprint for AdonisJS 7",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "engines": {
     "node": ">=24.0.0"
   },
@@ -19,7 +19,7 @@
     "./commands": "./build/src/commands/main.js"
   },
   "scripts": {
-    "copy:templates": "copyfiles -u 1 \"stubs/**/*.stub\" build/stubs/templates",
+    "copy:templates": "copyfiles -u 1 \"stubs/**/*.stub\" build/stubs/templates && copyfiles -u 0 \"src/schema.json\" build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",

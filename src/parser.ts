@@ -17,6 +17,12 @@ export class BlueprintParser {
     const content = readFileSync(filePath, 'utf8')
     const parsed = parse(content)
 
+    if (parsed === null || typeof parsed !== 'object') {
+      throw new Error(
+        `The draft file ${filePath} is empty or invalid. It must be a valid YAML object.`
+      )
+    }
+
     // Validate the parsed YAML against the schema
     const ajv = new Ajv.default({
       allErrors: true,

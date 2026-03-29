@@ -27,4 +27,18 @@ controllers:
 
     unlinkSync(filePath)
   })
+
+  test('throw error for empty draft.yaml', async ({ assert }) => {
+    const yamlContent = ''
+    const filePath = join(process.cwd(), 'test-empty.yaml')
+    writeFileSync(filePath, yamlContent)
+
+    const parser = new BlueprintParser()
+    await assert.rejects(
+      () => parser.parse(filePath),
+      `The draft file ${filePath} is empty or invalid. It must be a valid YAML object.`
+    )
+
+    unlinkSync(filePath)
+  })
 })
