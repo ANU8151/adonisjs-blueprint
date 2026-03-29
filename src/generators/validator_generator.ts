@@ -5,99 +5,85 @@ export class ValidatorGenerator extends BaseGenerator {
   async generate(name: string, definition: any) {
     const entity = this.app.generators.createEntity(name)
     const attributes: any[] = []
+    const tableName = string.plural(string.snakeCase(entity.name))
 
     if (definition.attributes) {
       for (const [attrName, attrType] of Object.entries(definition.attributes)) {
-        let vineChain = 'vine.string()'
+        if (typeof attrType === 'string') {
+          const parts = attrType.split(':')
+          const baseType = parts[0]
+          let vineType = 'string()'
 
-        const typeStr = typeof attrType === 'string' ? attrType : (attrType as any).type || 'string'
-        const parts = typeStr.split(':')
-        const baseType = parts[0]
-
-        if (baseType === 'number' || baseType === 'integer') {
-          vineChain = 'vine.number()'
-        } else if (baseType === 'boolean') {
-          vineChain = 'vine.boolean()'
-        } else if (baseType === 'email') {
-          vineChain = 'vine.string().email()'
-        } else if (baseType === 'url') {
-          vineChain = 'vine.string().url()'
-        } else if (baseType === 'ip') {
-          vineChain = 'vine.string().ip()'
-        } else if (baseType === 'uuid') {
-          vineChain = 'vine.string().uuid()'
-        } else if (baseType === 'mobile') {
-          vineChain = 'vine.string().mobile()'
-        } else if (baseType === 'postalCode') {
-          vineChain = 'vine.string().postalCode()'
-        } else if (baseType === 'creditCard') {
-          vineChain = 'vine.string().creditCard()'
-        } else if (baseType === 'macAddress') {
-          vineChain = 'vine.string().macAddress()'
-        }
-
-        // Apply modifiers
-        for (let i = 1; i < parts.length; i++) {
-          const modifier = parts[i]
-          if (modifier === 'unique') {
-            const tableName = string.plural(string.snakeCase(entity.name))
-            const scope = parts.find((p: string) => p.startsWith('scope:'))
-            if (scope) {
-              const scopeColumn = scope.replace('scope:', '')
-              vineChain += `.unique(async (db, value, field) => { 
-                const query = db.from('${tableName}').where('${attrName}', value)
-                if (field.meta.id) query.whereNot('id', field.meta.id)
-                const scopeValue = field.meta['${scopeColumn}'] || field.data['${scopeColumn}']
-                if (scopeValue) query.where('${scopeColumn}', scopeValue)
-                return !await query.first() 
-              })`
-            } else {
-              vineChain += `.unique(async (db, value, field) => { 
-                const query = db.from('${tableName}').where('${attrName}', value)
-                if (field.meta.id) query.whereNot('id', field.meta.id)
-                return !await query.first() 
-              })`
-            }
-          } else if (modifier === 'min' && parts[i + 1]) {
-            vineChain +=
-              baseType === 'number' ? `.min(${parts[i + 1]})` : `.minLength(${parts[i + 1]})`
-            i++
-          } else if (modifier === 'max' && parts[i + 1]) {
-            vineChain +=
-              baseType === 'number' ? `.max(${parts[i + 1]})` : `.maxLength(${parts[i + 1]})`
-            i++
-          } else if (modifier === 'optional' || modifier === 'nullable') {
-            vineChain += '.optional()'
-          } else if (modifier === 'confirmed') {
-            vineChain += '.confirmed()'
-          } else if (modifier === 'regex' && parts[i + 1]) {
-            vineChain += `.regex(new RegExp('${parts[i + 1]}'))`
-            i++
+          if (baseType === 'number' || baseType === 'integer') {
+            vineType = 'number()'
+          } else if (baseType === 'boolean') {
+            vineType = 'boolean()'
+          } else if (baseType === 'date' || baseType === 'datetime' || baseType === 'timestamp') {
+            vineType = 'date()'
+          } else if (baseType === 'email') {
+            vineType = 'string().email()'
           }
-        }
-        attributes.push({ name: attrName, vineType: vineChain.replace('vine.', '') })
 
-        if (parts.includes('confirmed')) {
+          // Apply unique rule with table and column
+          if (parts.includes('unique')) {
+            vineType += `.unique({ table: '${tableName}', column: '${attrName}' })`
+          }
+
+          // Apply other modifiers
+          if (parts.includes('min')) {
+            const minIdx = parts.indexOf('min')
+            if (parts[minIdx + 1]) {
+              const rule = baseType === 'number' || baseType === 'integer' ? 'min' : 'minLength'
+              vineType += `.${rule}(${parts[minIdx + 1]})`
+            }
+          }
+          if (parts.includes('max')) {
+            const maxIdx = parts.indexOf('max')
+            if (parts[maxIdx + 1]) {
+              const rule = baseType === 'number' || baseType === 'integer' ? 'max' : 'maxLength'
+              vineType += `.${rule}(${parts[maxIdx + 1]})`
+            }
+          }
+
+          if (parts.includes('optional') || parts.includes('nullable')) {
+            vineType += '.optional()'
+          }
+
           attributes.push({
-            name: `${attrName}_confirmation`,
-            vineType: vineChain.replace('vine.', '').replace('.confirmed()', ''),
+            name: attrName,
+            vineType,
           })
         }
       }
     }
+
+    // Prepare schemas with special handling for updates (to exclude current ID from unique checks)
+    const createSchema = attributes.map((a) => `${a.name}: vine.${a.vineType}`).join(',\n    ')
+
+    const updateSchema = attributes
+      .map((a) => {
+        let type = a.vineType
+        if (type.includes('.unique(')) {
+          // Add filter to exclude current record ID
+          type = type.replace(
+            '.unique({',
+            `.unique({ filter: (db, value, field) => db.from('${tableName}').whereNot('id', field.meta.id || 0).where('${a.name}', value),`
+          )
+        }
+        if (!type.includes('.optional()')) {
+          type += '.optional()'
+        }
+        return `${a.name}: vine.${type}`
+      })
+      .join(',\n    ')
 
     await this.generateStub(
       'make/validator/main.stub',
       {
         entity,
         attributes,
-        createSchema: attributes.map((a) => `${a.name}: vine.${a.vineType}`).join(',\n    '),
-        updateSchema: attributes
-          .map(
-            (a) =>
-              `${a.name}: vine.${a.vineType}${a.vineType.includes('.optional()') ? '' : '.optional()'}`
-          )
-          .join(',\n    '),
+        createSchema,
+        updateSchema,
       },
       definition.stub
     )

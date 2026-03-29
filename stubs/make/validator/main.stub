@@ -1,17 +1,23 @@
 {{{
   exports({
-    to: app.makePath('app/validators', entity.path, entity.name + '.ts')
+    to: app.makePath('app/validators', entity.path, entity.name.toLowerCase() + '.ts')
   })
 }}}
 import vine from '@vinejs/vine'
 
+/**
+ * Validates the {{ entity.name.toLowerCase() }} creation action
+ */
 export const create{{ entity.className }}Validator = vine.compile(
   vine.object({
     {{{ createSchema }}}
   })
 )
 
-export const update{{ entity.className }}Validator = vine.compile(
+/**
+ * Validates the {{ entity.name.toLowerCase() }} update action
+ */
+export const update{{ entity.className }}Validator = vine.withMetaData<{ id?: number | string }>().compile(
   vine.object({
     {{{ updateSchema }}}
   })

@@ -22,7 +22,6 @@ export class ModelGenerator extends BaseGenerator {
     // Process explicit attributes
     if (definition.attributes) {
       for (const [attrName, attrValue] of Object.entries(definition.attributes)) {
-        // Skip 'relationships' key if it's accidentally nested under attributes
         if (attrName === 'relationships') continue
 
         let tsType = 'string'
@@ -51,10 +50,9 @@ export class ModelGenerator extends BaseGenerator {
       }
     }
 
-    // Process relationships for models and implicit columns
+    // Process relationships
     if (definition.relationships) {
       for (const [relName, relValue] of Object.entries(definition.relationships)) {
-        // Blueprint supports 'rel: type' or 'rel: { type: ..., ... }'
         const relType = typeof relValue === 'string' ? relValue : (relValue as any).type
         if (!relType) continue
 
@@ -81,13 +79,13 @@ export class ModelGenerator extends BaseGenerator {
         }
 
         relationships.push({
-          importLine: `import { ${relType} } from '@adonisjs/lucid/orm'\nimport type { ${relTypeClass} } from '@adonisjs/lucid/types'\nimport ${relatedModelName} from '#models/${string.snakeCase(relatedModelName || '')}'`,
+          importLine: `import { ${relType} } from '@adonisjs/lucid/orm'\nimport type { ${relTypeClass} } from '@adonisjs/lucid/types/relations'\nimport ${relatedModelName} from '#models/${string.snakeCase(relatedModelName || '')}'`,
           line: relationshipLine,
         })
       }
     }
 
-    // Always add standard timestamps if not already present
+    // Standard timestamps
     if (!processedAttributes.has('createdAt')) {
       attributes.push({
         line: '@column.dateTime({ autoCreate: true })\n  declare createdAt: DateTime',
