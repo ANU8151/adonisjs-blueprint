@@ -31,7 +31,7 @@ export class RouteGenerator extends BaseGenerator {
       return
     }
 
-    let routeLine = `router.resource('${fullResourcePath}', '#controllers/${controllerPath}_controller')`
+    let routeLine = `router.resource('${fullResourcePath}', () => import('#controllers/${controllerPath}_controller'))`
     if (isApi) {
       routeLine += '.apiOnly()'
     }
