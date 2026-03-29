@@ -7,135 +7,121 @@ A professional-grade code generator for AdonisJS 7 inspired by [Laravel Blueprin
 
 ## Features
 
-- **API-First Mode**: Switch between traditional MVC, InertiaJS, or pure JSON APIs with a single setting.
-- **Watch Mode**: Automatically rebuilds your application infrastructure whenever you save your `draft.yaml`.
-- **JSON Schema Support**: Get full IDE auto-completion and validation for your `draft.yaml` file.
-- **Models & Migrations**: Generates Lucid models with support for **Soft Deletes**, **Enums**, and automatic **Pivot Tables**.
-- **Smart Relationships**: Infers foreign keys and generates proper TypeScript types for `belongsTo`, `hasMany`, etc.
-- **Controllers & Routes**: Generates controllers with advanced logic, **Middleware** support, and registers **Resource** or **API** routes.
-- **Advanced CRUD Views**: Generates full CRUD pages (Index, Create, Edit, Show) for **Edge**, **React**, **Vue**, and **Svelte**.
-- **Authorization**: Integrated **Bouncer** support—generates Policy classes with smart method mapping (`index` -> `viewAny`, etc.).
-- **Validators & Factories**: Creates advanced **VineJS** validators and Faker-powered factories.
-- **Real-time Communication**: Integrated **AdonisJS Transmission** support—generates channels and authorization logic.
-- **Infrastructure**: Generates **Smart Seeders**, Events, Mails, Jobs, Notifications, and **Japa** functional tests.
-- **Security**: Built-in support for **Rate Limiting** (limiters and throttle statement) and secure file uploads.
-- **OpenAPI Documentation**: Automatically generates full Swagger/OpenAPI 3.0 specs with request/response schemas.
-- **Reverse Engineering**: Trace your existing database to generate a `draft.yaml` automatically.
+- **API-First Mode**: Switch between MVC, InertiaJS, or pure JSON APIs with a single setting.
+- **Inertia Support**: Generates full CRUD pages for **React**, **Vue**, and **Svelte** with standard components.
+- **Models & Migrations**: Lucid models with **Soft Deletes**, **Enums**, and automatic **Pivot Tables**.
+- **Smart Shorthands**: Define migration modifiers like `string:unique:min:10:nullable` directly in YAML.
+- **Authorization**: Integrated **Bouncer** support—generates Policies with smart mapping.
+- **Side-Effects**: Generates **Events**, **Mails**, **Jobs**, and **Notifications** classes and logic.
+- **WebSockets**: Integrated **AdonisJS Transmission** support—generates channels and auth logic.
+- **Documentation**: Automatically generates full **OpenAPI 3.0** specs (Swagger).
+- **Security**: Built-in support for **Rate Limiting** and secure file uploads.
+- **Watch Mode**: Rebuilds your app infrastructure whenever you save `draft.yaml`.
 
 ## Setup
 
-Install the package via npm:
-
 ```sh
 npm install @anu8151/adonisjs-blueprint
-```
-
-Configure the package to publish the default configuration:
-
-```sh
 node ace configure @anu8151/adonisjs-blueprint
 ```
 
-## Developer Experience (DX)
+## DX (VS Code)
 
-To enable **Auto-completion** and **Validation** in VS Code, add the following comment to the top of your `draft.yaml`:
+Enable auto-completion by adding this comment to your `draft.yaml`:
 
 ```yaml
 # yaml-language-server: $schema=node_modules/@anu8151/adonisjs-blueprint/build/src/schema.json
-
-settings:
-  api: true
-...
 ```
 
 ## Usage
 
-### 1. Initialize your project
-
-Run the init command to create a sample `draft.yaml`:
+### 1. Initialize
 
 ```sh
 node ace blueprint:init
 ```
 
-### 2. Define your application
-
-Edit the generated `draft.yaml` file in your project root.
+### 2. Define
 
 ```yaml
 settings:
-  api: true
-  inertia:
-    enabled: true
-    adapter: react
+  api: false
+  inertia: { enabled: true, adapter: react }
+
+auth: true
 
 models:
   Post:
     attributes:
-      title: string:min:5
-      content: text
-      status: enum:draft,published,archived
+      title: string:unique:min:5
+      body: text:nullable
+      status: enum:draft,published:default:draft
+      category_id: integer:unsigned:references:categories.id
     softDeletes: true
     relationships:
       user: belongsTo
+      tags: belongsToMany
 
 controllers:
   Post:
     resource: true
-    store:
-      throttle: global
-      validate: 'title, content'
-      save: true
-
-limiters:
-  global:
-    limit: 10
-    duration: 1 min
-
-channels:
-  Chat:
-    authorized: true
+    publish:
+      query: find
+      save: status:published
+      fire: PostPublished
+      send: NewPostMail
+      redirect: posts.index
 ```
 
-### 3. Build your application
-
-Run the build command to generate all files:
-
-```sh
-node ace blueprint:build
-```
-
-For a seamless experience, use the **Watch Mode**:
+### 3. Build
 
 ```sh
 node ace blueprint:build --watch
 ```
 
-### 4. Core Commands
+## Advanced Shorthands
 
-- **Init**: Create a sample `draft.yaml` with best practices.
-- **Build**: Generate all files from `draft.yaml`. Supports `--watch` and `--force`.
-- **Erase**: Undo the last build and remove generated files using the manifest.
-- **Trace**: Generate a `draft.yaml` from your current database (Full Reverse Engineering).
-- **Stubs**: Copy all stubs to your project root for customization.
+Blueprint supports complex migration modifiers in your model attributes:
+
+- `string:unique`: Unique index.
+- `integer:unsigned`: Unsigned integer.
+- `text:nullable` or `text:optional`: Nullable column.
+- `enum:a,b,c`: Enum column.
+- `references:table.column`: Foreign key reference (defaults to `CASCADE`).
+- `datetime`, `timestamp`, `boolean`, `float`, `decimal`, `json`, `uuid`.
 
 ## Controller Statements
 
-Blueprint supports several "smart" statements in your controller actions:
+- `query: all | paginate:20 | find [, with: rel1, rel2]`
+- `validate: field1, field2`
+- `authorize: action, model`
+- `save: true [, with: rel1, rel2]`
+- `upload: field to: disk`
+- `fire: EventName`, `send: MailName`, `notify: target, NotifName`
+- `dispatch: JobName`, `throttle: limiterName`
+- `service: ServiceName.method`
 
-- `query: all | paginate:20 | find [, with: rel1, rel2]`: Generates Lucid query logic with optional preloads.
-- `validate: title, content`: Generates advanced VineJS validation logic.
-- `authorize: action, model`: Generates Bouncer Policy and authorization check.
-- `save: true [, with: rel1, rel2]`: Generates `Model.create()` and optional `.sync()` logic.
-- `delete: true`: Generates `findOrFail` and `delete()` logic.
-- `upload: field to: disk`: Generates file upload logic using AdonisJS Drive.
-- `fire: EventName`: Generates an Event class and `emitter.emit()` call.
-- `send: MailName`: Generates a Mail class and `mail.sendLater()` call.
-- `notify: target, NotificationName`: Generates a Notification class and `target.notify()` call.
-- `throttle: limiterName`: Applies a rate limiter to the action.
-- `dispatch: JobName`: Generates a Job class and handles execution.
-- `render: view with: data`: Generates the view (Edge/Inertia/JSON) and passes data.
-- `service: ServiceName.method`: Generates a Service class and calls the specified method.
+## Core Commands
+
+- `blueprint:init`: Create sample `draft.yaml`.
+- `blueprint:build`: Generate files from draft. Supports `--watch`, `--force`, `--erase`.
+- `blueprint:erase`: Remove all generated files from the last build.
+- `blueprint:trace`: Reverse-engineer your DB into a `draft.yaml`.
+- `blueprint:stubs`: Export all stubs for local customization.
+
+## Testing
+
+This package uses **Japa** for testing. To run tests:
+
+```sh
+npm test
+```
+
+For quick test runs during development:
+
+```sh
+npm run quick:test
+```
 
 ## License
 

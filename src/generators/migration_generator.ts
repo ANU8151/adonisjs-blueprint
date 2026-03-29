@@ -18,36 +18,38 @@ export class MigrationGenerator extends BaseGenerator {
 
           if (type === 'foreign') {
             migrationLine = `table.integer('${attrName}').unsigned().references('id').inTable('${string.plural(attrName.replace('_id', '') || '')}')`
-          } else if (type === 'enum') {
-            const values = modifiers
-              .join(',')
-              .split(',')
-              .map((v) => `'${v.trim()}'`)
-              .join(', ')
-            migrationLine = `table.enum('${attrName}', [${values}])`
           } else {
-            // Mapping for common types
-            const typeMapping: Record<string, string> = {
-              datetime: 'dateTime',
-              timestamp: 'timestamp',
-              text: 'text',
-              string: 'string',
-              integer: 'integer',
-              boolean: 'boolean',
-              float: 'float',
-              double: 'double',
-              decimal: 'decimal',
-              date: 'date',
-              time: 'time',
-              json: 'json',
-              jsonb: 'jsonb',
-              uuid: 'uuid',
+            if (type === 'enum') {
+              const valuesStr = modifiers[0] || ''
+              const values = valuesStr
+                .split(',')
+                .map((v) => `'${v.trim()}'`)
+                .join(', ')
+              migrationLine = `table.enum('${attrName}', [${values}])`
+            } else {
+              // Mapping for common types
+              const typeMapping: Record<string, string> = {
+                datetime: 'dateTime',
+                timestamp: 'timestamp',
+                text: 'text',
+                string: 'string',
+                integer: 'integer',
+                boolean: 'boolean',
+                float: 'float',
+                double: 'double',
+                decimal: 'decimal',
+                date: 'date',
+                time: 'time',
+                json: 'json',
+                jsonb: 'jsonb',
+                uuid: 'uuid',
+              }
+
+              const knexType = typeMapping[type] || type
+              migrationLine = `table.${knexType}('${attrName}')`
             }
 
-            const knexType = typeMapping[type] || type
-            migrationLine = `table.${knexType}('${attrName}')`
-
-            // Add modifiers
+            // Add common modifiers
             if (modifiers.includes('unique')) migrationLine += '.unique()'
             if (modifiers.includes('nullable') || modifiers.includes('optional')) {
               migrationLine += '.nullable()'
@@ -56,15 +58,21 @@ export class MigrationGenerator extends BaseGenerator {
             }
             if (modifiers.includes('unsigned')) migrationLine += '.unsigned()'
 
-            // Handle references:categories.id
-            const refIdx = modifiers.findIndex((m) => m.startsWith('references:'))
-            if (refIdx !== -1) {
-              const refParts = modifiers[refIdx].split(':')
-              if (refParts[1]) {
-                const tableAndColumn = refParts[1].split('.')
+            // Handle default value and references by iterating and checking current and next parts
+            for (let i = 0; i < modifiers.length; i++) {
+              const modifier = modifiers[i]
+              if (modifier === 'default' && modifiers[i + 1]) {
+                const defaultValue = modifiers[i + 1]
+                const isNumeric = !Number.isNaN(Number(defaultValue))
+                migrationLine += `.defaultTo(${isNumeric ? defaultValue : `'${defaultValue}'`})`
+                i++ // Skip next part
+              } else if (modifier === 'references' && modifiers[i + 1]) {
+                const refValue = modifiers[i + 1]
+                const tableAndColumn = refValue.split('.')
                 const table = tableAndColumn[0]
                 const column = tableAndColumn[1] || 'id'
                 migrationLine += `.references('${column}').inTable('${table}').onDelete('CASCADE')`
+                i++ // Skip next part
               }
             }
           }
