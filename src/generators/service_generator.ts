@@ -13,6 +13,7 @@ export class ServiceGenerator extends BaseGenerator {
 
     await this.generateStub('make/service/main.stub', {
       entity,
+      imports: "import { inject } from '@adonisjs/core'",
     })
   }
 }
