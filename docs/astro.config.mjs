@@ -15,14 +15,12 @@ export default defineConfig({
 				{
 					label: 'Guides',
 					items: [
-						// Each item here is one entry in the sidebar.
 						{ label: 'Getting Started', link: '/getting-started/' },
 					],
 				},
 				{
 					label: 'Reference',
-					autogroup: true,
-					directory: 'reference',
+					autogenerate: { directory: 'reference' },
 				},
 			],
 		}),
